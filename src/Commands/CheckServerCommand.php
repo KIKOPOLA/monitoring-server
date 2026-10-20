@@ -444,14 +444,19 @@ class CheckServerCommand extends Command
      */
     protected function openInBrowser(string $url): void
     {
+        if (!filter_var($url, FILTER_VALIDATE_URL)) {
+            return;
+        }
+
         $osFamily = PHP_OS_FAMILY;
+        $escapedUrl = escapeshellarg($url);
 
         if ($osFamily === 'Windows') {
-            @pclose(@popen("start \"\" \"{$url}\"", 'r'));
+            @pclose(@popen("start \"\" {$escapedUrl}", 'r'));
         } elseif ($osFamily === 'Darwin') {
-            @exec("open \"{$url}\"");
+            @exec("open {$escapedUrl}");
         } else {
-            @exec("xdg-open \"{$url}\" > /dev/null 2>&1 &");
+            @exec("xdg-open {$escapedUrl} > /dev/null 2>&1 &");
         }
     }
 

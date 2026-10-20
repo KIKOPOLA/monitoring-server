@@ -31,4 +31,9 @@ return [
      * Middleware applied to web dashboard routes.
      */
     'middleware' => ['web'],
+
+    /**
+     * Middleware applied to API routes (default: throttle to prevent DoS attacks).
+     */
+    'api_middleware' => ['throttle:60,1'],
 ];

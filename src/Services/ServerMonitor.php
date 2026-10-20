@@ -49,7 +49,7 @@ class ServerMonitor
     {
         if ($family === 'Windows') {
             // Baca langsung dari Windows CIM/WMI
-            $caption = @shell_exec('powershell -NoProfile -Command "(Get-CimInstance Win32_OperatingSystem).Caption"');
+            $caption = $this->safeShellExec('powershell -NoProfile -Command "(Get-CimInstance Win32_OperatingSystem).Caption"');
             if ($caption && trim($caption) !== '') {
                 $versionInfo = php_uname('v');
                 $buildSuffix = '';
@@ -82,7 +82,7 @@ class ServerMonitor
         }
 
         if ($family === 'Darwin') {
-            $ver = @shell_exec('sw_vers -productVersion');
+            $ver = $this->safeShellExec('sw_vers -productVersion');
             return 'macOS ' . ($ver ? trim($ver) : php_uname('r'));
         }
 
@@ -148,7 +148,7 @@ class ServerMonitor
             }
         } elseif ($osFamily === 'Windows') {
             $cmd = 'powershell -NoProfile -Command "(Get-CimInstance Win32_OperatingSystem) | Select-Object TotalVisibleMemorySize,FreePhysicalMemory | ConvertTo-Json"';
-            $output = @shell_exec($cmd);
+            $output = $this->safeShellExec($cmd);
             if ($output) {
                 $data = @json_decode(trim($output), true);
                 if (isset($data['TotalVisibleMemorySize'], $data['FreePhysicalMemory'])) {
@@ -210,7 +210,7 @@ class ServerMonitor
             }
         } elseif ($osFamily === 'Windows') {
             $cmd = 'powershell -NoProfile -Command "(Get-CimInstance Win32_Processor | Measure-Object -Property LoadPercentage -Average).Average"';
-            $output = @shell_exec($cmd);
+            $output = $this->safeShellExec($cmd);
             if ($output !== null && is_numeric(trim($output))) {
                 $loadPercentage = (float) trim($output);
             }
@@ -235,10 +235,15 @@ class ServerMonitor
             $pdo = $connection->getPdo();
             $latencyMs = round((microtime(true) - $startTime) * 1000, 2);
 
+            $driverName = $connection->getDriverName();
+            $rawDbName = (string) $connection->getDatabaseName();
+            // Sanitize SQLite full system path to prevent Full Path Disclosure (FPD)
+            $dbName = ($driverName === 'sqlite') ? basename($rawDbName) : $rawDbName;
+
             return [
                 'connected' => true,
-                'driver' => $connection->getDriverName(),
-                'database' => $connection->getDatabaseName(),
+                'driver' => $driverName,
+                'database' => $dbName,
                 'latency_ms' => $latencyMs,
                 'status' => $latencyMs > 500 ? 'warning' : 'ok',
                 'message' => 'Connected successfully (' . $latencyMs . ' ms)',
@@ -272,7 +277,7 @@ class ServerMonitor
             }
         } elseif ($osFamily === 'Windows') {
             $cmd = 'powershell -NoProfile -Command "((Get-Date) - (Get-CimInstance Win32_OperatingSystem).LastBootUpTime).TotalSeconds"';
-            $output = @shell_exec($cmd);
+            $output = $this->safeShellExec($cmd);
             if ($output !== null && is_numeric(trim($output))) {
                 $seconds = (int) trim($output);
             }
@@ -292,6 +297,25 @@ class ServerMonitor
         $parts[] = "{$minutes}m";
 
         return implode(' ', $parts);
+    }
+
+    /**
+     * Safely execute shell command with disabled_functions check.
+     */
+    protected function safeShellExec(string $cmd): ?string
+    {
+        if (!function_exists('shell_exec')) {
+            return null;
+        }
+
+        $disabled = explode(',', ini_get('disable_functions') ?: '');
+        $disabled = array_map('trim', $disabled);
+        if (in_array('shell_exec', $disabled, true)) {
+            return null;
+        }
+
+        $result = @shell_exec($cmd);
+        return is_string($result) ? $result : null;
     }
 
     /**
