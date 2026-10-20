@@ -250,7 +250,9 @@ class ServerMonitor
                 'database' => 'unknown',
                 'latency_ms' => null,
                 'status' => 'critical',
-                'message' => $e->getMessage(),
+                'message' => (function_exists('config') && config('app.debug'))
+                    ? $e->getMessage()
+                    : 'Gagal terhubung ke database server.',
             ];
         }
     }

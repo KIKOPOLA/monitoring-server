@@ -49,7 +49,7 @@ class MonitoringDashboardController extends Controller
                 ?: $request->header('X-Monitoring-Token')
                 ?: $request->bearerToken();
 
-            if ($givenToken !== $expectedToken) {
+            if (empty($givenToken) || !hash_equals((string) $expectedToken, (string) $givenToken)) {
                 abort(403, 'Akses ditolak: Token monitoring tidak valid atau belum diberikan.');
             }
         }

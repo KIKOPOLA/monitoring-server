@@ -843,8 +843,8 @@
 
     <!-- Live Polling Script -->
     <script>
-        const API_URL = "{{ $apiEndpoint }}";
-        const TOKEN = "{{ $token }}";
+        const API_URL = @json($apiEndpoint);
+        const TOKEN = @json($token);
         const maxLogRows = 8;
 
         async function runProbe(isManual = false) {
