@@ -26,6 +26,7 @@ class CheckServerCommand extends Command
         // Paksa aktifkan warna ANSI agar selalu tampil berwarna di Git Bash, MinTTY, dan Windows
         if ($this->output) {
             $this->output->setDecorated(true);
+            $this->output->getFormatter()->setDecorated(true);
         }
 
         $this->displayBanner();
@@ -43,17 +44,17 @@ class CheckServerCommand extends Command
             [
                 'Sistem Operasi',
                 "{$system['os']} ({$system['hostname']})",
-                '<info>[OK]</info>'
+                "\033[1;32m[OK]\033[0m"
             ],
             [
                 'PHP Runtime',
                 "v{$system['php_version']} | Laravel {$system['laravel_version']}",
-                '<info>[OK]</info>'
+                "\033[1;32m[OK]\033[0m"
             ],
             [
                 'Server Uptime',
                 $system['uptime'],
-                '<info>[OK]</info>'
+                "\033[1;32m[OK]\033[0m"
             ],
             [
                 'Penggunaan CPU',
@@ -168,17 +169,32 @@ class CheckServerCommand extends Command
      */
     protected function displayBanner(): void
     {
-        $this->newLine();
+        $white = "\033[1;37m";
+        $red = "\033[1;31m";
+        $yellow = "\033[1;33m";
+        $gray = "\033[90m";
+        $reset = "\033[0m";
 
-        // 1. Sleek dual badge: White background for MONITORING, Red background for SERVER
-        $this->line("  \033[30;47;1m MONITORING \033[37;41;1m SERVER \033[0m  \033[1;33mby kikopola v1.0\033[0m");
+        $lines = [
+            "{$white}  __  __             _ _             _             {$reset}{$red}   ____                                {$reset}",
+            "{$white} |  \\/  | ___  _ __ (_) |_ ___  _ __(_)_ __   __ _ {$reset}{$red}  / ___|  ___ _ ____   _____ _ __      {$reset}",
+            "{$white} | |\\/| |/ _ \\| '_ \\| | __/ _ \\| '__| | '_ \\ / _` |{$reset}{$red}  \\___ \\ / _ \\ '__\\ \\ / / _ \\ '__|     {$reset}",
+            "{$white} | |  | | (_) | | | | | || (_) | |  | | | | | (_| |{$reset}{$red}   ___) |  __/ |   \\ V /  __/ |        {$reset}",
+            "{$white} |_|  |_|\\___/|_| |_|_|\\__\\___/|_|  |_|_| |_|\\__, |{$reset}{$red}  |____/ \\___|_|    \\_/ \\___|_|        {$reset}",
+            "{$white}                                              |___/ {$reset}{$red}                                       {$reset}",
+        ];
 
-        // 2. Bold text subtitle: MONITORING in bold white, SERVER in bold red
-        $this->line("  \033[1;37m⚡ MONITORING\033[0m \033[1;31mSERVER\033[0m \033[90m•\033[0m \033[1;33mby kikopola v1.0 ⚡\033[0m");
+        $bannerText = "\n" . implode("\n", $lines) . "\n"
+            . "               {$yellow}⚡{$reset} {$white}MONITORING{$reset} {$red}SERVER{$reset} {$gray}•{$reset} {$yellow}by kikopola v1.0 ⚡{$reset}\n"
+            . "  {$gray}─────────────────────────────────────────────────────────────────────────────{$reset}\n\n";
 
-        // 3. Hairline industrial divider
-        $this->line("  \033[90m─────────────────────────────────────────────────────────────────────────────\033[0m");
-        $this->newLine();
+        if (defined('STDOUT') && is_resource(STDOUT)) {
+            fwrite(STDOUT, $bannerText);
+        } elseif ($this->output) {
+            $this->output->writeln($bannerText, \Symfony\Component\Console\Output\OutputInterface::OUTPUT_RAW);
+        } else {
+            echo $bannerText;
+        }
     }
 
     /**
@@ -187,10 +203,10 @@ class CheckServerCommand extends Command
     protected function formatStatusTag(string $status): string
     {
         return match ($status) {
-            'ok' => '<fg=green;options=bold>[OK]</>',
-            'warning' => '<fg=yellow;options=bold>[WARNING]</>',
-            'critical' => '<fg=red;options=bold>[CRITICAL]</>',
-            default => '<fg=gray>[UNKNOWN]</>',
+            'ok' => "\033[1;32m[OK]\033[0m",
+            'warning' => "\033[1;33m[WARNING]\033[0m",
+            'critical' => "\033[1;31m[CRITICAL]\033[0m",
+            default => "\033[90m[UNKNOWN]\033[0m",
         };
     }
 }
