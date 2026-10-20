@@ -39,10 +39,9 @@ composer require kikopola/monitoring-server
 
 ---
 
-## 🚀 Fungsi & Cara Penggunaan
+## 🚀 Cara Penggunaan
 
-### 1. Pengecekan via Terminal (Artisan CLI)
-Jalankan perintah monitoring di terminal:
+Jalankan perintah monitoring di terminal proyek Laravel Anda:
 
 ```bash
 php artisan monitoring:check
@@ -51,37 +50,13 @@ php artisan monitoring:check
 **Fitur:**
 - Menampilkan tabel kondisi hardware riil (CPU load, RAM terpakai, Harddisk, Uptime, & status latensi Database).
 - Otomatis mengaktifkan dedicated web server mandiri di **port 8989**.
-- Menampilkan link dashboard: `http://localhost:8989/monitoring`
+- Menampilkan link dashboard web: `http://localhost:8989/monitoring`
 - **Streaming log request aktivitas server secara real-time** (seperti `php artisan serve`).
 - Tekan `Ctrl+C` untuk mematikan monitoring dan server dengan aman (*graceful shutdown*).
 
 Opsi tambahan:
 - `php artisan monitoring:check --open` : Langsung membuka web browser menuju dashboard.
 - `php artisan monitoring:check --once` : Menampilkan ringkasan metrik 1 kali tanpa streaming server.
-
----
-
-### 2. Dashboard Web Real-Time
-Buka browser dan akses URL:
-```text
-http://localhost:8989/monitoring
-```
-*(Atau akses `/monitoring` pada domain web server Anda yang sedang berjalan, contoh: `http://localhost:8000/monitoring`)*.
-
-**Fitur Dashboard:**
-- Tampilan modern bertema **Dark Mode**.
-- Metrik hardware dan database ter-update otomatis setiap 3 detik (*live polling*).
-- Responsif dan ringan diakses dari komputer maupun smartphone.
-
----
-
-### 3. REST API Metrik (JSON)
-Menyediakan endpoint JSON untuk kebutuhan integrasi bot, dashboard luar, atau aplikasi lain:
-
-```http
-GET /api/monitoring/metrics
-Accept: application/json
-```
 
 ---
 
