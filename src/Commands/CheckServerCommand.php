@@ -165,14 +165,10 @@ class CheckServerCommand extends Command
     {
         $this->newLine();
         $banner = <<<'ASCII'
-<fg=white;options=bold>  __  __             _ _             _             </><fg=red;options=bold>   ____                                </>
-<fg=white;options=bold> |  \/  | ___  _ __ (_) |_ ___  _ __(_)_ __   __ _ </><fg=red;options=bold>  / ___|  ___ _ ____   _____ _ __ </>
-<fg=white;options=bold> | |\/| |/ _ \| '_ \| | __/ _ \| '__| | '_ \ / _` |</><fg=red;options=bold>  \___ \ / _ \ '__\ \ / / _ \ '__|</>
-<fg=white;options=bold> | |  | | (_) | | | | | || (_) | |  | | | | | (_| |</><fg=red;options=bold>   ___) |  __/ |   \ V /  __/ |   </>
-<fg=white;options=bold> |_|  |_|\___/|_| |_|_|\__\___/|_|  |_|_| |_|\__, |</><fg=red;options=bold>  |____/ \___|_|    \_/ \___|_|   </>
-<fg=white;options=bold>                                              |___/</>
+<fg=white;options=bold>  █▀▄▀█ █▀█ █▄ █ █ ▀█▀ █▀█ █▀█ █ █▄ █ █▀▀ </><fg=red;options=bold> █▀▀ █▀▀ █▀█ █ █ █▀▀ █▀█</>
+<fg=white;options=bold>  █ ▀ █ █▄█ █ ▀█ █  █  █▄█ █▀▄ █ █ ▀█ █▄█ </><fg=red;options=bold> ▄██ █▄▄ █▀▄  █  ██▄ █▀▄</>
 
-               ⚡ <fg=white;options=bold>MONITORING</> <fg=red;options=bold>SERVER</> <fg=gray>•</> <fg=yellow;options=bold>by kikopola v1.0 ⚡</>
+           ⚡ <fg=white;options=bold>MONITORING</> <fg=red;options=bold>SERVER</> <fg=gray>•</> <fg=yellow;options=bold>by kikopola v1.0</> ⚡
 ASCII;
 
         $this->line($banner);
