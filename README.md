@@ -69,7 +69,7 @@ Jika package di-upload ke GitHub Anda:
 "repositories": [
     {
         "type": "vcs",
-        "url": "https://github.com/USERNAME/monitoring-server.git"
+        "url": "https://github.com/KIKOPOLA/monitoring-server.git"
     }
 ]
 ```

@@ -1,6 +1,5 @@
 {
     "name": "kikopola/monitoring-server",
-    "version": "1.0.0",
     "description": "Laravel server monitoring package",
     "type": "library",
     "license": "MIT",
