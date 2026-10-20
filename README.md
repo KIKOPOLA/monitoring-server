@@ -113,11 +113,6 @@ return [
 ];
 ```
 
-### Mengamankan Dashboard di Server Production
-Di file `.env` server Anda, cukup tambahkan token rahasia:
-
-```env
-MONITORING_SERVER_API_TOKEN=kuncirahasia123
 ```
 Buka dashboard dengan parameter: `http://domain-anda.com/monitoring?token=kuncirahasia123`
 
