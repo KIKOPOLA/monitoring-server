@@ -175,14 +175,48 @@ class CheckServerCommand extends Command
         $gray = "\033[90m";
         $reset = "\033[0m";
 
-        $lines = [
-            "{$white}  __  __             _ _             _             {$reset}{$red}   ____                                {$reset}",
-            "{$white} |  \\/  | ___  _ __ (_) |_ ___  _ __(_)_ __   __ _ {$reset}{$red}  / ___|  ___ _ ____   _____ _ __      {$reset}",
-            "{$white} | |\\/| |/ _ \\| '_ \\| | __/ _ \\| '__| | '_ \\ / _` |{$reset}{$red}  \\___ \\ / _ \\ '__\\ \\ / / _ \\ '__|     {$reset}",
-            "{$white} | |  | | (_) | | | | | || (_) | |  | | | | | (_| |{$reset}{$red}   ___) |  __/ |   \\ V /  __/ |        {$reset}",
-            "{$white} |_|  |_|\\___/|_| |_|_|\\__\\___/|_|  |_|_| |_|\\__, |{$reset}{$red}  |____/ \\___|_|    \\_/ \\___|_|        {$reset}",
-            "{$white}                                              |___/ {$reset}{$red}                                       {$reset}",
+        // ANSI Shadow font (matching the user's requested 3D block isometric font style)
+        $mon = [
+            "███╗   ███╗ ██████╗ ███╗   ██╗██╗████████╗ ██████╗ ██████╗ ██╗███╗   ██╗ ██████╗ ",
+            "████╗ ████║██╔═══██╗████╗  ██║██║╚══██╔══╝██╔═══██╗██╔══██╗██║████╗  ██║██╔════╝ ",
+            "██╔████╔██║██║   ██║██╔██╗ ██║██║   ██║   ██║   ██║██████╔╝██║██╔██╗ ██║██║  ███╗",
+            "██║╚██╔╝██║██║   ██║██║╚██╗██║██║   ██║   ██║   ██║██╔══██╗██║██║╚██╗██║██║   ██║",
+            "██║ ╚═╝ ██║╚██████╔╝██║ ╚████║██║   ██║   ╚██████╔╝██║  ██║██║██║ ╚████║╚██████╔╝",
+            "╚═╝     ╚═╝ ╚═════╝ ╚═╝  ╚═══╝╚═╝   ╚═╝    ╚═════╝ ╚═╝  ╚═╝╚═╝╚═╝  ╚═══╝ ╚═════╝ ",
         ];
+
+        $srv = [
+            "███████╗███████╗██████╗ ██╗   ██╗███████╗██████╗ ",
+            "██╔════╝██╔════╝██╔══██╗██║   ██║██╔════╝██╔══██╗",
+            "███████╗█████╗  ██████╔╝██║   ██║█████╗  ██╔══██╗",
+            "╚════██║██╔══╝  ██╔══██╗╚██╗ ██╔╝██╔══╝  ██╔══██╗",
+            "███████║███████╗██║  ██║ ╚████╔╝ ███████╗██║  ██║",
+            "╚══════╝╚══════╝╚═╝  ╚═╝  ╚═══╝  ╚══════╝╚═╝  ╚═╝",
+        ];
+
+        $termWidth = 120;
+        try {
+            $termWidth = (new \Symfony\Component\Console\Terminal())->getWidth();
+        } catch (\Throwable $e) {
+            $termWidth = 120;
+        }
+
+        $lines = [];
+        if ($termWidth >= 135) {
+            // Side-by-side if terminal width is wide enough
+            for ($i = 0; $i < 6; $i++) {
+                $lines[] = "  {$white}{$mon[$i]}{$reset}   {$red}{$srv[$i]}{$reset}";
+            }
+        } else {
+            // Stacked if terminal is standard/narrower (<= 120 cols) so lines never wrap/break
+            foreach ($mon as $line) {
+                $lines[] = "  {$white}{$line}{$reset}";
+            }
+            $lines[] = "";
+            foreach ($srv as $line) {
+                $lines[] = "                 {$red}{$line}{$reset}";
+            }
+        }
 
         $bannerText = "\n" . implode("\n", $lines) . "\n"
             . "               {$yellow}⚡{$reset} {$white}MONITORING{$reset} {$red}SERVER{$reset} {$gray}•{$reset} {$yellow}by kikopola v1.0 ⚡{$reset}\n"
