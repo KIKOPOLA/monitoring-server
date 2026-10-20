@@ -23,6 +23,11 @@ class CheckServerCommand extends Command
      */
     public function handle(ServerMonitor $monitor): int
     {
+        // Paksa aktifkan warna ANSI agar selalu tampil berwarna di Git Bash, MinTTY, dan Windows
+        if ($this->output) {
+            $this->output->setDecorated(true);
+        }
+
         $this->displayBanner();
 
         $this->info('Mengambil data metrik hardware secara real-time...');
@@ -159,19 +164,20 @@ class CheckServerCommand extends Command
     }
 
     /**
-     * Display the ASCII Art banner.
+     * Display the console banner.
      */
     protected function displayBanner(): void
     {
         $this->newLine();
-        $banner = <<<'ASCII'
-<fg=white;options=bold>  █▀▄▀█ █▀█ █▄ █ █ ▀█▀ █▀█ █▀█ █ █▄ █ █▀▀ </><fg=red;options=bold> █▀▀ █▀▀ █▀█ █ █ █▀▀ █▀█</>
-<fg=white;options=bold>  █ ▀ █ █▄█ █ ▀█ █  █  █▄█ █▀▄ █ █ ▀█ █▄█ </><fg=red;options=bold> ▄██ █▄▄ █▀▄  █  ██▄ █▀▄</>
 
-           ⚡ <fg=white;options=bold>MONITORING</> <fg=red;options=bold>SERVER</> <fg=gray>•</> <fg=yellow;options=bold>by kikopola v1.0</> ⚡
-ASCII;
+        // 1. Sleek dual badge: White background for MONITORING, Red background for SERVER
+        $this->line("  \033[30;47;1m MONITORING \033[37;41;1m SERVER \033[0m  \033[1;33mby kikopola v1.0\033[0m");
 
-        $this->line($banner);
+        // 2. Bold text subtitle: MONITORING in bold white, SERVER in bold red
+        $this->line("  \033[1;37m⚡ MONITORING\033[0m \033[1;31mSERVER\033[0m \033[90m•\033[0m \033[1;33mby kikopola v1.0 ⚡\033[0m");
+
+        // 3. Hairline industrial divider
+        $this->line("  \033[90m─────────────────────────────────────────────────────────────────────────────\033[0m");
         $this->newLine();
     }
 
