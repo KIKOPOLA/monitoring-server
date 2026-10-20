@@ -1,9 +1,10 @@
 # ⚡ Monitoring Server by kikopola
 
-[![Latest Version](https://img.shields.io/badge/version-1.0.0-blue.svg)](https://github.com/kikopola/monitoring-server)
-[![Software License](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
-[![Laravel Compatibility](https://img.shields.io/badge/laravel-10.x%20|%2011.x%20|%2012.x%20|%2013.x-red.svg)](https://laravel.com)
-[![PHP Version](https://img.shields.io/badge/php-%5E8.1%20|%20%5E8.2%20|%20%5E8.3%20|%20%5E8.4-purple.svg)](https://php.net)
+[![Latest Version on Packagist](https://img.shields.io/packagist/v/kikopola/monitoring-server.svg?style=flat-square)](https://packagist.org/packages/kikopola/monitoring-server)
+[![Total Downloads](https://img.shields.io/packagist/dt/kikopola/monitoring-server.svg?style=flat-square)](https://packagist.org/packages/kikopola/monitoring-server)
+[![Software License](https://img.shields.io/badge/license-MIT-green.svg?style=flat-square)](LICENSE)
+[![Laravel Compatibility](https://img.shields.io/badge/laravel-10.x%20|%2011.x%20|%2012.x%20|%2013.x-red.svg?style=flat-square)](https://laravel.com)
+[![PHP Version](https://img.shields.io/badge/php-%5E8.1%20|%20%5E8.2%20|%20%5E8.3%20|%20%5E8.4-purple.svg?style=flat-square)](https://php.net)
 
 Package pemantau server (*Server Health & Resource Monitor*) untuk aplikasi Laravel yang bekerja secara **Zero-Configuration (Plug and Play)**. Cukup install via Composer, dan langsung aktif tanpa perlu mengubah kode aplikasi Anda.
 
@@ -39,56 +40,15 @@ Package pemantau server (*Server Health & Resource Monitor*) untuk aplikasi Lara
 
 ---
 
-## 📦 Panduan Instalasi
+## 📦 Instalasi
 
-### Metode 1: Instalasi dari Folder Lokal (Path Repository)
-Jika package berada di folder lokal komputer Anda (misalnya `../monitoring-server`):
-
-1. Buka file `composer.json` di proyek Laravel target Anda, lalu tambahkan bagian `repositories`:
-```json
-"repositories": [
-    {
-        "type": "path",
-        "url": "../monitoring-server"
-    }
-]
-```
-
-2. Jalankan perintah instalasi di terminal proyek Laravel:
-```bash
-composer require kikopola/monitoring-server:@dev
-```
-
----
-
-### Metode 2: Instalasi dari Repository GitHub (VCS)
-Jika package di-upload ke GitHub Anda:
-
-1. Buka file `composer.json` di proyek Laravel target:
-```json
-"repositories": [
-    {
-        "type": "vcs",
-        "url": "https://github.com/KIKOPOLA/monitoring-server.git"
-    }
-]
-```
-
-2. Jalankan require:
-```bash
-composer require kikopola/monitoring-server:dev-main
-```
-
----
-
-### Metode 3: Instalasi dari Packagist (Composer Publik)
-Jika package sudah didaftarkan di Packagist:
+Cukup jalankan perintah Composer di proyek Laravel Anda:
 
 ```bash
 composer require kikopola/monitoring-server
 ```
 
-> **Catatan:** Berkat fitur *Laravel Package Auto-Discovery*, package ini otomatis terdaftar tanpa perlu mengubah `config/app.php` atau `routes/web.php`.
+> **Catatan:** Berkat fitur *Laravel Package Auto-Discovery*, package ini otomatis terdaftar dan langsung aktif tanpa perlu mengubah `config/app.php` atau `routes/web.php`.
 
 ---
 
