@@ -1,32 +1,39 @@
 <!DOCTYPE html>
-<html lang="id">
+<html lang="id" class="dark">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Server Monitor &bull; {{ $metrics['system']['hostname'] }}</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&family=Geist+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
     <style>
         :root {
-            --bg-base: #09090b;
-            --bg-panel: #111113;
-            --bg-panel-elevated: #18181b;
+            --bg-canvas: #09090b;
+            --bg-card: #0f0f12;
+            --bg-card-hover: #141418;
+            --bg-subtle: #18181b;
             --bg-muted: #27272a;
-            --border-dim: #27272a;
-            --border-bright: #3f3f46;
-            --text-primary: #fafafa;
-            --text-secondary: #a1a1aa;
+            --border-card: rgba(255, 255, 255, 0.08);
+            --border-card-hover: rgba(255, 255, 255, 0.16);
+            --border-divider: rgba(255, 255, 255, 0.05);
+            --text-heading: #fafafa;
+            --text-body: #a1a1aa;
             --text-muted: #71717a;
-            --accent-green: #10b981;
-            --accent-green-bg: rgba(16, 185, 129, 0.1);
-            --accent-amber: #f59e0b;
-            --accent-amber-bg: rgba(245, 158, 11, 0.1);
-            --accent-rose: #f43f5e;
-            --accent-rose-bg: rgba(244, 63, 94, 0.1);
-            --accent-cyan: #06b6d4;
-            --font-sans: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-            --font-mono: 'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+            --text-faint: #52525b;
+            --color-emerald: #10b981;
+            --color-emerald-glow: rgba(16, 185, 129, 0.15);
+            --color-amber: #f59e0b;
+            --color-amber-glow: rgba(245, 158, 11, 0.15);
+            --color-rose: #f43f5e;
+            --color-rose-glow: rgba(244, 63, 94, 0.15);
+            --color-cyan: #06b6d4;
+            --color-blue: #3b82f6;
+            --font-sans: 'Geist', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            --font-mono: 'Geist Mono', ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+            --radius-sm: 6px;
+            --radius-md: 10px;
+            --radius-lg: 14px;
         }
 
         * {
@@ -36,330 +43,463 @@
         }
 
         body {
-            background-color: var(--bg-base);
-            color: var(--text-secondary);
+            background-color: var(--bg-canvas);
+            color: var(--text-body);
             font-family: var(--font-sans);
             font-size: 0.875rem;
             line-height: 1.5;
             min-height: 100vh;
-            padding: 1.5rem;
+            padding: 2rem 1.5rem;
             -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
         }
 
-        .layout {
-            max-width: 1200px;
+        /* 21st.dev Subtle Ambient Glow */
+        .ambient-glow {
+            position: fixed;
+            top: 0;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 800px;
+            height: 350px;
+            background: radial-gradient(ellipse 60% 50% at 50% 0%, rgba(59, 130, 246, 0.04), transparent 70%);
+            pointer-events: none;
+            z-index: 0;
+        }
+
+        .dashboard-container {
+            max-width: 1240px;
             margin: 0 auto;
             display: flex;
             flex-direction: column;
-            gap: 1.25rem;
+            gap: 1.5rem;
+            position: relative;
+            z-index: 1;
         }
 
-        /* Top Navigation Bar */
-        .topbar {
+        /* 21st.dev Sleek Topbar Header */
+        .app-header {
             display: flex;
             align-items: center;
             justify-content: space-between;
-            padding: 0.875rem 1.25rem;
-            background-color: var(--bg-panel);
-            border: 1px solid var(--border-dim);
-            border-radius: 6px;
+            background: linear-gradient(180deg, rgba(24, 24, 27, 0.6) 0%, rgba(15, 15, 18, 0.8) 100%);
+            border: 1px solid var(--border-card);
+            backdrop-filter: blur(12px);
+            border-radius: var(--radius-lg);
+            padding: 0.875rem 1.5rem;
             flex-wrap: wrap;
-            gap: 0.75rem;
-        }
-
-        .topbar-brand {
-            display: flex;
-            align-items: center;
-            gap: 0.75rem;
-        }
-
-        .brand-indicator {
-            width: 8px;
-            height: 8px;
-            background-color: var(--accent-green);
-            border-radius: 2px;
-        }
-
-        .brand-title {
-            font-family: var(--font-mono);
-            font-weight: 700;
-            font-size: 0.9375rem;
-            color: var(--text-primary);
-            letter-spacing: -0.02em;
-        }
-
-        .brand-title .pkg-author {
-            color: var(--text-muted);
-            font-weight: 500;
-        }
-
-        .brand-tag {
-            font-family: var(--font-mono);
-            font-size: 0.6875rem;
-            padding: 0.15rem 0.4rem;
-            background-color: var(--bg-muted);
-            color: var(--text-secondary);
-            border-radius: 3px;
-            font-weight: 500;
-        }
-
-        .topbar-actions {
-            display: flex;
-            align-items: center;
-            gap: 0.625rem;
-        }
-
-        .badge-live {
-            display: flex;
-            align-items: center;
-            gap: 0.4rem;
-            font-family: var(--font-mono);
-            font-size: 0.75rem;
-            color: var(--text-secondary);
-            background-color: var(--bg-panel-elevated);
-            border: 1px solid var(--border-dim);
-            padding: 0.35rem 0.65rem;
-            border-radius: 4px;
-        }
-
-        .badge-live .live-dot {
-            width: 6px;
-            height: 6px;
-            border-radius: 50%;
-            background-color: var(--accent-green);
-        }
-
-        .btn-action {
-            background-color: var(--bg-panel-elevated);
-            color: var(--text-primary);
-            border: 1px solid var(--border-dim);
-            padding: 0.35rem 0.75rem;
-            border-radius: 4px;
-            font-family: var(--font-mono);
-            font-size: 0.75rem;
-            font-weight: 600;
-            cursor: pointer;
-            transition: all 0.1s ease-in-out;
-            display: inline-flex;
-            align-items: center;
-            gap: 0.35rem;
-        }
-
-        .btn-action:hover {
-            background-color: var(--bg-muted);
-            border-color: var(--border-bright);
-        }
-
-        .btn-action:disabled {
-            opacity: 0.5;
-            cursor: not-allowed;
-        }
-
-        /* System Telemetry Specs Strip */
-        .specs-strip {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
-            gap: 1px;
-            background-color: var(--border-dim);
-            border: 1px solid var(--border-dim);
-            border-radius: 6px;
-            overflow: hidden;
-        }
-
-        .spec-cell {
-            background-color: var(--bg-panel);
-            padding: 0.875rem 1rem;
-        }
-
-        .spec-cell .spec-label {
-            font-family: var(--font-mono);
-            font-size: 0.6875rem;
-            color: var(--text-muted);
-            text-transform: uppercase;
-            letter-spacing: 0.05em;
-            margin-bottom: 0.25rem;
-        }
-
-        .spec-cell .spec-val {
-            font-family: var(--font-mono);
-            font-size: 0.8125rem;
-            font-weight: 600;
-            color: var(--text-primary);
-            white-space: nowrap;
-            overflow: hidden;
-            text-overflow: ellipsis;
-        }
-
-        /* 4 Hardware Panels Grid */
-        .metrics-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(270px, 1fr));
-            gap: 1.25rem;
-        }
-
-        .panel {
-            background-color: var(--bg-panel);
-            border: 1px solid var(--border-dim);
-            border-radius: 6px;
-            padding: 1.25rem;
-            display: flex;
-            flex-direction: column;
             gap: 1rem;
         }
 
-        .panel-header {
+        .brand-cluster {
             display: flex;
             align-items: center;
-            justify-content: space-between;
+            gap: 0.875rem;
         }
 
-        .panel-title {
-            font-family: var(--font-mono);
-            font-size: 0.75rem;
-            text-transform: uppercase;
-            letter-spacing: 0.06em;
-            color: var(--text-muted);
-            font-weight: 600;
-        }
-
-        .tag-status {
-            font-family: var(--font-mono);
-            font-size: 0.6875rem;
-            font-weight: 600;
-            padding: 0.15rem 0.5rem;
-            border-radius: 3px;
-            border: 1px solid transparent;
-        }
-
-        .tag-status.ok {
-            background-color: var(--accent-green-bg);
-            color: var(--accent-green);
-            border-color: rgba(16, 185, 129, 0.2);
-        }
-
-        .tag-status.warning {
-            background-color: var(--accent-amber-bg);
-            color: var(--accent-amber);
-            border-color: rgba(245, 158, 11, 0.2);
-        }
-
-        .tag-status.critical {
-            background-color: var(--accent-rose-bg);
-            color: var(--accent-rose);
-            border-color: rgba(244, 63, 94, 0.2);
-        }
-
-        .metric-primary {
+        .brand-badge-icon {
+            width: 36px;
+            height: 36px;
+            background: linear-gradient(135deg, #18181b 0%, #0f0f12 100%);
+            border: 1px solid var(--border-card);
+            border-radius: var(--radius-md);
             display: flex;
-            align-items: baseline;
-            gap: 0.375rem;
+            align-items: center;
+            justify-content: center;
+            color: var(--color-emerald);
+            box-shadow: 0 0 15px rgba(16, 185, 129, 0.1);
         }
 
-        .stat-huge {
-            font-family: var(--font-mono);
-            font-size: 2.25rem;
-            font-weight: 700;
-            color: var(--text-primary);
-            line-height: 1;
-            letter-spacing: -0.03em;
-        }
-
-        .stat-sub {
-            font-family: var(--font-mono);
-            font-size: 0.8125rem;
-            color: var(--text-muted);
-        }
-
-        /* Segmented / Hairline Gauge Bar */
-        .gauge-track {
-            height: 4px;
-            background-color: var(--bg-muted);
-            border-radius: 2px;
-            overflow: hidden;
-        }
-
-        .gauge-fill {
-            height: 100%;
-            background-color: var(--accent-cyan);
-            border-radius: 2px;
-            transition: width 0.3s ease;
-        }
-
-        .gauge-fill.ok {
-            background-color: var(--accent-green);
-        }
-
-        .gauge-fill.warning {
-            background-color: var(--accent-amber);
-        }
-
-        .gauge-fill.critical {
-            background-color: var(--accent-rose);
-        }
-
-        /* Metric key-value table inside panel */
-        .kv-table {
+        .brand-meta {
             display: flex;
             flex-direction: column;
-            gap: 0.4rem;
-            padding-top: 0.5rem;
-            border-top: 1px solid var(--border-dim);
-            font-family: var(--font-mono);
-            font-size: 0.75rem;
         }
 
-        .kv-row {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
-
-        .kv-key {
-            color: var(--text-muted);
-        }
-
-        .kv-val {
-            color: var(--text-primary);
+        .brand-title {
+            font-size: 0.9375rem;
             font-weight: 600;
-        }
-
-        /* Rolling Probe Activity Stream */
-        .stream-panel {
-            background-color: var(--bg-panel);
-            border: 1px solid var(--border-dim);
-            border-radius: 6px;
-            padding: 1.25rem;
-        }
-
-        .stream-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 0.875rem;
-        }
-
-        .stream-title {
-            font-family: var(--font-mono);
-            font-size: 0.8125rem;
-            font-weight: 600;
-            color: var(--text-primary);
+            color: var(--text-heading);
             letter-spacing: -0.01em;
             display: flex;
             align-items: center;
             gap: 0.5rem;
         }
 
-        .stream-sub {
+        .brand-title .pkg-name {
+            color: var(--text-heading);
+        }
+
+        .brand-title .pkg-server {
+            color: var(--color-rose);
+        }
+
+        .version-pill {
             font-family: var(--font-mono);
             font-size: 0.6875rem;
             color: var(--text-muted);
+            background-color: var(--bg-subtle);
+            border: 1px solid var(--border-divider);
+            padding: 0.1rem 0.4rem;
+            border-radius: var(--radius-sm);
+            font-weight: 500;
         }
 
-        .table-wrap {
+        .brand-sub {
+            font-size: 0.75rem;
+            color: var(--text-muted);
+            font-family: var(--font-mono);
+        }
+
+        .header-controls {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+        }
+
+        /* 21st.dev Pulse Pill */
+        .live-indicator {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            background-color: var(--bg-card);
+            border: 1px solid var(--border-card);
+            padding: 0.4rem 0.85rem;
+            border-radius: 9999px;
+            font-family: var(--font-mono);
+            font-size: 0.75rem;
+            font-weight: 500;
+            color: var(--text-heading);
+        }
+
+        .pulse-ring {
+            position: relative;
+            width: 8px;
+            height: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .pulse-core {
+            width: 6px;
+            height: 6px;
+            background-color: var(--color-emerald);
+            border-radius: 50%;
+        }
+
+        .pulse-wave {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            background-color: var(--color-emerald);
+            border-radius: 50%;
+            opacity: 0.75;
+            animation: pulse-animation 2s cubic-bezier(0, 0, 0.2, 1) infinite;
+        }
+
+        @keyframes pulse-animation {
+            0% { transform: scale(1); opacity: 0.8; }
+            50% { transform: scale(2.2); opacity: 0; }
+            100% { transform: scale(2.2); opacity: 0; }
+        }
+
+        /* 21st.dev Button */
+        .btn-probe {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            background: linear-gradient(180deg, #27272a 0%, #18181b 100%);
+            border: 1px solid var(--border-card);
+            color: var(--text-heading);
+            padding: 0.425rem 0.95rem;
+            border-radius: var(--radius-sm);
+            font-size: 0.75rem;
+            font-weight: 500;
+            font-family: var(--font-sans);
+            cursor: pointer;
+            transition: all 0.15s ease;
+            box-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
+        }
+
+        .btn-probe:hover {
+            border-color: var(--border-card-hover);
+            background: linear-gradient(180deg, #3f3f46 0%, #27272a 100%);
+            transform: translateY(-1px);
+        }
+
+        .btn-probe:active {
+            transform: translateY(0);
+        }
+
+        .kbd-hint {
+            font-family: var(--font-mono);
+            font-size: 0.65rem;
+            color: var(--text-muted);
+            background: rgba(0, 0, 0, 0.4);
+            border: 1px solid var(--border-card);
+            padding: 0.1rem 0.35rem;
+            border-radius: 3px;
+        }
+
+        /* System Telemetry Specs Strip */
+        .specs-ribbon {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+            gap: 1px;
+            background-color: var(--border-card);
+            border: 1px solid var(--border-card);
+            border-radius: var(--radius-md);
+            overflow: hidden;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
+        }
+
+        .spec-item {
+            background-color: var(--bg-card);
+            padding: 1rem 1.25rem;
+            display: flex;
+            flex-direction: column;
+            gap: 0.25rem;
+            transition: background-color 0.15s ease;
+        }
+
+        .spec-item:hover {
+            background-color: var(--bg-card-hover);
+        }
+
+        .spec-label {
+            font-family: var(--font-mono);
+            font-size: 0.6875rem;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        .spec-value {
+            font-family: var(--font-mono);
+            font-size: 0.8125rem;
+            font-weight: 600;
+            color: var(--text-heading);
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        /* 4-Card Hardware Telemetry Grid */
+        .cards-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(270px, 1fr));
+            gap: 1.25rem;
+        }
+
+        .card {
+            background-color: var(--bg-card);
+            border: 1px solid var(--border-card);
+            border-radius: var(--radius-lg);
+            padding: 1.5rem;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            gap: 1.25rem;
+            transition: all 0.2s ease;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .card:hover {
+            border-color: var(--border-card-hover);
+            transform: translateY(-2px);
+            box-shadow: 0 8px 30px rgba(0, 0, 0, 0.3);
+        }
+
+        .card-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .card-tagline {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .card-icon {
+            width: 28px;
+            height: 28px;
+            background-color: var(--bg-subtle);
+            border: 1px solid var(--border-card);
+            border-radius: var(--radius-sm);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: var(--text-secondary);
+        }
+
+        .card-name {
+            font-size: 0.8125rem;
+            font-weight: 600;
+            color: var(--text-heading);
+            letter-spacing: -0.01em;
+        }
+
+        /* 21st.dev Status Badges */
+        .status-chip {
+            font-family: var(--font-mono);
+            font-size: 0.6875rem;
+            font-weight: 600;
+            padding: 0.2rem 0.55rem;
+            border-radius: 9999px;
+            border: 1px solid transparent;
+            letter-spacing: 0.02em;
+        }
+
+        .status-chip.ok {
+            background-color: var(--color-emerald-glow);
+            color: var(--color-emerald);
+            border-color: rgba(16, 185, 129, 0.25);
+        }
+
+        .status-chip.warning {
+            background-color: var(--color-amber-glow);
+            color: var(--color-amber);
+            border-color: rgba(245, 158, 11, 0.25);
+        }
+
+        .status-chip.critical {
+            background-color: var(--color-rose-glow);
+            color: var(--color-rose);
+            border-color: rgba(244, 63, 94, 0.25);
+        }
+
+        .card-hero-stat {
+            display: flex;
+            align-items: baseline;
+            gap: 0.35rem;
+        }
+
+        .stat-number {
+            font-family: var(--font-mono);
+            font-size: 2.5rem;
+            font-weight: 700;
+            line-height: 1;
+            color: var(--text-heading);
+            letter-spacing: -0.04em;
+        }
+
+        .stat-unit {
+            font-family: var(--font-mono);
+            font-size: 0.875rem;
+            font-weight: 500;
+            color: var(--text-muted);
+        }
+
+        /* 21st.dev Segmented Meter Bar */
+        .progress-track {
+            height: 6px;
+            background-color: var(--bg-subtle);
+            border-radius: 3px;
+            overflow: hidden;
+            position: relative;
+        }
+
+        .progress-bar {
+            height: 100%;
+            background-color: var(--color-cyan);
+            border-radius: 3px;
+            transition: width 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .progress-bar.ok {
+            background-color: var(--color-emerald);
+        }
+
+        .progress-bar.warning {
+            background-color: var(--color-amber);
+        }
+
+        .progress-bar.critical {
+            background-color: var(--color-rose);
+        }
+
+        .card-details-table {
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+            padding-top: 0.875rem;
+            border-top: 1px solid var(--border-divider);
+            font-family: var(--font-mono);
+            font-size: 0.75rem;
+        }
+
+        .detail-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .detail-key {
+            color: var(--text-muted);
+        }
+
+        .detail-val {
+            color: var(--text-heading);
+            font-weight: 500;
+        }
+
+        /* Real-time Telemetry Stream Panel */
+        .stream-card {
+            background-color: var(--bg-card);
+            border: 1px solid var(--border-card);
+            border-radius: var(--radius-lg);
+            padding: 1.5rem;
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+        }
+
+        .stream-top {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            flex-wrap: wrap;
+            gap: 0.75rem;
+        }
+
+        .stream-title-group {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .stream-icon {
+            width: 8px;
+            height: 8px;
+            background-color: var(--color-cyan);
+            border-radius: 2px;
+        }
+
+        .stream-title {
+            font-size: 0.875rem;
+            font-weight: 600;
+            color: var(--text-heading);
+            letter-spacing: -0.01em;
+        }
+
+        .stream-counter {
+            font-family: var(--font-mono);
+            font-size: 0.6875rem;
+            color: var(--text-muted);
+            background-color: var(--bg-subtle);
+            border: 1px solid var(--border-card);
+            padding: 0.2rem 0.5rem;
+            border-radius: var(--radius-sm);
+        }
+
+        .stream-table-container {
             overflow-x: auto;
         }
 
-        table.stream-table {
+        table.telemetry-table {
             width: 100%;
             border-collapse: collapse;
             font-family: var(--font-mono);
@@ -367,224 +507,315 @@
             text-align: left;
         }
 
-        table.stream-table th {
+        table.telemetry-table th {
             color: var(--text-muted);
             font-weight: 500;
-            padding: 0.5rem 0.75rem;
-            border-bottom: 1px solid var(--border-dim);
+            padding: 0.625rem 0.875rem;
+            border-bottom: 1px solid var(--border-card);
             text-transform: uppercase;
             letter-spacing: 0.05em;
             font-size: 0.6875rem;
+            background-color: rgba(255, 255, 255, 0.01);
         }
 
-        table.stream-table td {
-            padding: 0.5rem 0.75rem;
-            border-bottom: 1px solid var(--border-dim);
-            color: var(--text-secondary);
+        table.telemetry-table td {
+            padding: 0.625rem 0.875rem;
+            border-bottom: 1px solid var(--border-divider);
+            color: var(--text-body);
+            transition: background-color 0.1s ease;
         }
 
-        table.stream-table tr:last-child td {
+        table.telemetry-table tr:hover td {
+            background-color: var(--bg-subtle);
+            color: var(--text-heading);
+        }
+
+        table.telemetry-table tr:last-child td {
             border-bottom: none;
         }
 
-        table.stream-table tr:hover td {
-            background-color: var(--bg-panel-elevated);
-        }
-
-
         /* Footer */
-        .footer {
+        .dashboard-footer {
             display: flex;
             justify-content: space-between;
             align-items: center;
+            padding: 0.5rem 0.25rem;
             font-family: var(--font-mono);
             font-size: 0.6875rem;
             color: var(--text-muted);
-            padding: 0.5rem 0.25rem;
             flex-wrap: wrap;
             gap: 0.5rem;
+        }
+
+        .footer-brand a {
+            color: var(--text-body);
+            text-decoration: none;
+        }
+
+        .footer-brand a:hover {
+            color: var(--text-heading);
+            text-decoration: underline;
         }
 
         @media (max-width: 768px) {
             body {
                 padding: 1rem;
             }
-            .specs-strip {
+            .specs-ribbon {
                 grid-template-columns: 1fr 1fr;
             }
         }
     </style>
 </head>
 <body>
-    <div class="layout">
-        <!-- Topbar -->
-        <header class="topbar">
-            <div class="topbar-brand">
-                <span class="brand-indicator" aria-hidden="true"></span>
-                <span class="brand-title">
-                    <span class="pkg-author">kikopola/</span>monitoring-server
-                </span>
-                <span class="brand-tag">PORT 8989</span>
+    <div class="ambient-glow" aria-hidden="true"></div>
+
+    <div class="dashboard-container">
+        <!-- 21st.dev Navigation Topbar -->
+        <header class="app-header">
+            <div class="brand-cluster">
+                <div class="brand-badge-icon" aria-hidden="true">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <rect x="2" y="2" width="20" height="8" rx="2" ry="2"></rect>
+                        <rect x="2" y="14" width="20" height="8" rx="2" ry="2"></rect>
+                        <line x1="6" y1="6" x2="6.01" y2="6"></line>
+                        <line x1="6" y1="18" x2="6.01" y2="18"></line>
+                    </svg>
+                </div>
+                <div class="brand-meta">
+                    <div class="brand-title">
+                        <span class="pkg-name">kikopola/monitoring-</span><span class="pkg-server">server</span>
+                        <span class="version-pill">v1.0.0</span>
+                    </div>
+                    <div class="brand-sub">PORT 8989 &bull; DEDICATED PROBE AGENT</div>
+                </div>
             </div>
 
-            <div class="topbar-actions">
-                <div class="badge-live">
-                    <span class="live-dot" aria-hidden="true"></span>
-                    <span id="label-live">PROBE: AKTIF</span>
+            <div class="header-controls">
+                <div class="live-indicator">
+                    <div class="pulse-ring">
+                        <div class="pulse-wave"></div>
+                        <div class="pulse-core"></div>
+                    </div>
+                    <span id="label-live">LIVE PROBE (3s)</span>
                 </div>
-                <button type="button" class="btn-action" id="btn-reprobe" onclick="runProbe(true)">
+                <button type="button" class="btn-probe" id="btn-reprobe" onclick="runProbe(true)" title="Jalankan pemeriksaan ulang langsung">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <polyline points="23 4 23 10 17 10"></polyline>
+                        <polyline points="1 20 1 14 7 14"></polyline>
+                        <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path>
+                    </svg>
                     <span>Re-probe</span>
+                    <span class="kbd-hint">R</span>
                 </button>
             </div>
         </header>
 
-        <!-- System Specs Strip -->
-        <section class="specs-strip" aria-label="Informasi Perangkat Keras">
-            <div class="spec-cell">
-                <div class="spec-label">HOSTNAME</div>
-                <div class="spec-val" id="spec-host" title="{{ $metrics['system']['hostname'] }}">{{ $metrics['system']['hostname'] }}</div>
+        <!-- System Specifications Ribbon -->
+        <section class="specs-ribbon" aria-label="Informasi Perangkat Keras Mesin">
+            <div class="spec-item">
+                <span class="spec-label">HOSTNAME</span>
+                <span class="spec-value" id="spec-host" title="{{ $metrics['system']['hostname'] }}">{{ $metrics['system']['hostname'] }}</span>
             </div>
-            <div class="spec-cell">
-                <div class="spec-label">SISTEM OPERASI</div>
-                <div class="spec-val" id="spec-os" title="{{ $metrics['system']['os'] }}">{{ $metrics['system']['os'] }}</div>
+            <div class="spec-item">
+                <span class="spec-label">SISTEM OPERASI</span>
+                <span class="spec-value" id="spec-os" title="{{ $metrics['system']['os'] }}">{{ $metrics['system']['os'] }}</span>
             </div>
-            <div class="spec-cell">
-                <div class="spec-label">ALAMAT IP</div>
-                <div class="spec-val" id="spec-ip">{{ $metrics['system']['server_ip'] }}</div>
+            <div class="spec-item">
+                <span class="spec-label">ALAMAT IP</span>
+                <span class="spec-value" id="spec-ip">{{ $metrics['system']['server_ip'] }}</span>
             </div>
-            <div class="spec-cell">
-                <div class="spec-label">RUNTIME ENGINE</div>
-                <div class="spec-val">PHP {{ $metrics['system']['php_version'] }} &bull; Lv {{ $metrics['system']['laravel_version'] }}</div>
+            <div class="spec-item">
+                <span class="spec-label">RUNTIME ENGINE</span>
+                <span class="spec-value">PHP {{ $metrics['system']['php_version'] }} &bull; Lv {{ $metrics['system']['laravel_version'] }}</span>
             </div>
-            <div class="spec-cell">
-                <div class="spec-label">SYSTEM UPTIME</div>
-                <div class="spec-val" id="spec-uptime">{{ $metrics['system']['uptime'] }}</div>
+            <div class="spec-item">
+                <span class="spec-label">UPTIME SERVER</span>
+                <span class="spec-value" id="spec-uptime">{{ $metrics['system']['uptime'] }}</span>
             </div>
         </section>
 
-        <!-- Core 4-Panel Metrics Grid -->
-        <main class="metrics-grid">
+        <!-- 4 Hardware Metrics Grid -->
+        <main class="cards-grid">
             <!-- CPU Panel -->
-            <article class="panel">
-                <div class="panel-header">
-                    <span class="panel-title">PROCESSOR (CPU)</span>
-                    <span class="tag-status {{ $metrics['cpu']['status'] }}" id="tag-cpu">{{ strtoupper($metrics['cpu']['status']) }}</span>
-                </div>
-                <div class="metric-primary">
-                    <span class="stat-huge" id="val-cpu">{{ $metrics['cpu']['load_percentage'] }}</span>
-                    <span class="stat-sub">% LOAD</span>
-                </div>
-                <div class="gauge-track">
-                    <div class="gauge-fill {{ $metrics['cpu']['status'] }}" id="gauge-cpu" style="width: {{ min($metrics['cpu']['load_percentage'], 100) }}%;"></div>
-                </div>
-                <div class="kv-table">
-                    <div class="kv-row">
-                        <span class="kv-key">Beban Realtime</span>
-                        <span class="kv-val" id="sub-cpu-load">{{ $metrics['cpu']['load_percentage'] }}%</span>
+            <article class="card">
+                <div class="card-header">
+                    <div class="card-tagline">
+                        <div class="card-icon" aria-hidden="true">
+                            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <rect x="4" y="4" width="16" height="16" rx="2"></rect>
+                                <rect x="9" y="9" width="6" height="6"></rect>
+                                <line x1="9" y1="1" x2="9" y2="4"></line>
+                                <line x1="15" y1="1" x2="15" y2="4"></line>
+                                <line x1="9" y1="20" x2="9" y2="23"></line>
+                                <line x1="15" y1="20" x2="15" y2="23"></line>
+                                <line x1="20" y1="9" x2="23" y2="9"></line>
+                                <line x1="20" y1="14" x2="23" y2="14"></line>
+                                <line x1="1" y1="9" x2="4" y2="9"></line>
+                                <line x1="1" y1="14" x2="4" y2="14"></line>
+                            </svg>
+                        </div>
+                        <span class="card-name">Processor (CPU)</span>
                     </div>
-                    <div class="kv-row">
-                        <span class="kv-key">Status Sensor</span>
-                        <span class="kv-val" id="sub-cpu-state">{{ $metrics['cpu']['status'] === 'ok' ? 'Normal' : 'Tinggi' }}</span>
+                    <span class="status-chip {{ $metrics['cpu']['status'] }}" id="tag-cpu">{{ strtoupper($metrics['cpu']['status']) }}</span>
+                </div>
+
+                <div class="card-hero-stat">
+                    <span class="stat-number" id="val-cpu">{{ $metrics['cpu']['load_percentage'] }}</span>
+                    <span class="stat-unit">% LOAD</span>
+                </div>
+
+                <div class="progress-track" role="progressbar" aria-valuenow="{{ $metrics['cpu']['load_percentage'] }}" aria-valuemin="0" aria-valuemax="100">
+                    <div class="progress-bar {{ $metrics['cpu']['status'] }}" id="bar-cpu" style="width: {{ min($metrics['cpu']['load_percentage'], 100) }}%;"></div>
+                </div>
+
+                <div class="card-details-table">
+                    <div class="detail-row">
+                        <span class="detail-key">Beban Realtime</span>
+                        <span class="detail-val" id="sub-cpu-load">{{ $metrics['cpu']['load_percentage'] }}%</span>
+                    </div>
+                    <div class="detail-row">
+                        <span class="detail-key">Status Beban</span>
+                        <span class="detail-val" id="sub-cpu-state">{{ $metrics['cpu']['status'] === 'ok' ? 'Normal' : 'Tinggi' }}</span>
                     </div>
                 </div>
             </article>
 
-            <!-- RAM Panel -->
-            <article class="panel">
-                <div class="panel-header">
-                    <span class="panel-title">PHYSICAL MEMORY (RAM)</span>
-                    <span class="tag-status {{ $metrics['memory']['status'] }}" id="tag-ram">{{ strtoupper($metrics['memory']['status']) }}</span>
-                </div>
-                <div class="metric-primary">
-                    <span class="stat-huge" id="val-ram">{{ $metrics['memory']['used_percentage'] }}</span>
-                    <span class="stat-sub">% USED</span>
-                </div>
-                <div class="gauge-track">
-                    <div class="gauge-fill {{ $metrics['memory']['status'] }}" id="gauge-ram" style="width: {{ $metrics['memory']['used_percentage'] }}%;"></div>
-                </div>
-                <div class="kv-table">
-                    <div class="kv-row">
-                        <span class="kv-key">Terpakai</span>
-                        <span class="kv-val" id="sub-ram-used">{{ $metrics['memory']['used'] }}</span>
+            <!-- Memory RAM Panel -->
+            <article class="card">
+                <div class="card-header">
+                    <div class="card-tagline">
+                        <div class="card-icon" aria-hidden="true">
+                            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M6 19v-3"></path>
+                                <path d="M10 19v-3"></path>
+                                <path d="M14 19v-3"></path>
+                                <path d="M18 19v-3"></path>
+                                <path d="M2 5h20v10H2z"></path>
+                            </svg>
+                        </div>
+                        <span class="card-name">Memory (RAM)</span>
                     </div>
-                    <div class="kv-row">
-                        <span class="kv-key">Kapasitas Total</span>
-                        <span class="kv-val" id="sub-ram-total">{{ $metrics['memory']['total'] }}</span>
+                    <span class="status-chip {{ $metrics['memory']['status'] }}" id="tag-ram">{{ strtoupper($metrics['memory']['status']) }}</span>
+                </div>
+
+                <div class="card-hero-stat">
+                    <span class="stat-number" id="val-ram">{{ $metrics['memory']['used_percentage'] }}</span>
+                    <span class="stat-unit">% USED</span>
+                </div>
+
+                <div class="progress-track" role="progressbar" aria-valuenow="{{ $metrics['memory']['used_percentage'] }}" aria-valuemin="0" aria-valuemax="100">
+                    <div class="progress-bar {{ $metrics['memory']['status'] }}" id="bar-ram" style="width: {{ $metrics['memory']['used_percentage'] }}%;"></div>
+                </div>
+
+                <div class="card-details-table">
+                    <div class="detail-row">
+                        <span class="detail-key">RAM Terpakai</span>
+                        <span class="detail-val" id="sub-ram-used">{{ $metrics['memory']['used'] }}</span>
+                    </div>
+                    <div class="detail-row">
+                        <span class="detail-key">Total Fisik</span>
+                        <span class="detail-val" id="sub-ram-total">{{ $metrics['memory']['total'] }}</span>
                     </div>
                 </div>
             </article>
 
             <!-- Storage Panel -->
-            <article class="panel">
-                <div class="panel-header">
-                    <span class="panel-title">STORAGE (DISK)</span>
-                    <span class="tag-status {{ $metrics['disk']['status'] }}" id="tag-disk">{{ strtoupper($metrics['disk']['status']) }}</span>
-                </div>
-                <div class="metric-primary">
-                    <span class="stat-huge" id="val-disk">{{ $metrics['disk']['used_percentage'] }}</span>
-                    <span class="stat-sub">% USED</span>
-                </div>
-                <div class="gauge-track">
-                    <div class="gauge-fill {{ $metrics['disk']['status'] }}" id="gauge-disk" style="width: {{ $metrics['disk']['used_percentage'] }}%;"></div>
-                </div>
-                <div class="kv-table">
-                    <div class="kv-row">
-                        <span class="kv-key">Ruang Bebas</span>
-                        <span class="kv-val" id="sub-disk-free">{{ $metrics['disk']['free'] }}</span>
+            <article class="card">
+                <div class="card-header">
+                    <div class="card-tagline">
+                        <div class="card-icon" aria-hidden="true">
+                            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <ellipse cx="12" cy="5" rx="9" ry="3"></ellipse>
+                                <path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"></path>
+                                <path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"></path>
+                            </svg>
+                        </div>
+                        <span class="card-name">Storage (Disk)</span>
                     </div>
-                    <div class="kv-row">
-                        <span class="kv-key">Total Partisi</span>
-                        <span class="kv-val" id="sub-disk-total">{{ $metrics['disk']['total'] }}</span>
+                    <span class="status-chip {{ $metrics['disk']['status'] }}" id="tag-disk">{{ strtoupper($metrics['disk']['status']) }}</span>
+                </div>
+
+                <div class="card-hero-stat">
+                    <span class="stat-number" id="val-disk">{{ $metrics['disk']['used_percentage'] }}</span>
+                    <span class="stat-unit">% USED</span>
+                </div>
+
+                <div class="progress-track" role="progressbar" aria-valuenow="{{ $metrics['disk']['used_percentage'] }}" aria-valuemin="0" aria-valuemax="100">
+                    <div class="progress-bar {{ $metrics['disk']['status'] }}" id="bar-disk" style="width: {{ $metrics['disk']['used_percentage'] }}%;"></div>
+                </div>
+
+                <div class="card-details-table">
+                    <div class="detail-row">
+                        <span class="detail-key">Ruang Bebas</span>
+                        <span class="detail-val" id="sub-disk-free">{{ $metrics['disk']['free'] }}</span>
+                    </div>
+                    <div class="detail-row">
+                        <span class="detail-key">Total Partisi</span>
+                        <span class="detail-val" id="sub-disk-total">{{ $metrics['disk']['total'] }}</span>
                     </div>
                 </div>
             </article>
 
             <!-- Database Panel -->
-            <article class="panel">
-                <div class="panel-header">
-                    <span class="panel-title">DATABASE (PDO)</span>
-                    <span class="tag-status {{ $metrics['database']['status'] }}" id="tag-db">{{ strtoupper($metrics['database']['status']) }}</span>
+            <article class="card">
+                <div class="card-header">
+                    <div class="card-tagline">
+                        <div class="card-icon" aria-hidden="true">
+                            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M12 2v20"></path>
+                                <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path>
+                            </svg>
+                        </div>
+                        <span class="card-name">Database (PDO)</span>
+                    </div>
+                    <span class="status-chip {{ $metrics['database']['status'] }}" id="tag-db">{{ strtoupper($metrics['database']['status']) }}</span>
                 </div>
-                <div class="metric-primary">
-                    <span class="stat-huge" id="val-db-latency">{{ $metrics['database']['latency_ms'] !== null ? $metrics['database']['latency_ms'] : '0' }}</span>
-                    <span class="stat-sub">MS LATENCY</span>
+
+                <div class="card-hero-stat">
+                    <span class="stat-number" id="val-db-latency">{{ $metrics['database']['latency_ms'] !== null ? $metrics['database']['latency_ms'] : '0' }}</span>
+                    <span class="stat-unit">MS LATENCY</span>
                 </div>
-                <div class="gauge-track">
-                    <div class="gauge-fill {{ $metrics['database']['status'] }}" id="gauge-db" style="width: {{ $metrics['database']['connected'] ? '100' : '0' }}%;"></div>
+
+                <div class="progress-track">
+                    <div class="progress-bar {{ $metrics['database']['status'] }}" id="bar-db" style="width: {{ $metrics['database']['connected'] ? '100' : '0' }}%;"></div>
                 </div>
-                <div class="kv-table">
-                    <div class="kv-row">
-                        <span class="kv-key">Status Koneksi</span>
-                        <span class="kv-val" id="sub-db-status" style="color: {{ $metrics['database']['connected'] ? 'var(--accent-green)' : 'var(--accent-rose)' }};">
+
+                <div class="card-details-table">
+                    <div class="detail-row">
+                        <span class="detail-key">Status Koneksi</span>
+                        <span class="detail-val" id="sub-db-status" style="color: {{ $metrics['database']['connected'] ? 'var(--color-emerald)' : 'var(--color-rose)' }};">
                             {{ $metrics['database']['connected'] ? 'CONNECTED' : 'DISCONNECTED' }}
                         </span>
                     </div>
-                    <div class="kv-row">
-                        <span class="kv-key">Driver / DB</span>
-                        <span class="kv-val">{{ strtoupper($metrics['database']['driver']) }}</span>
+                    <div class="detail-row">
+                        <span class="detail-key">Driver / Engine</span>
+                        <span class="detail-val">{{ strtoupper($metrics['database']['driver']) }}</span>
                     </div>
                 </div>
             </article>
         </main>
 
-        <!-- Rolling Probe Activity Log -->
-        <section class="stream-panel">
-            <div class="stream-header">
-                <div class="stream-title">
-                    <span>ROLLING PROBE AUDIT STREAM</span>
+        <!-- Realtime Telemetry Stream Table -->
+        <section class="stream-card">
+            <div class="stream-top">
+                <div class="stream-title-group">
+                    <div class="stream-icon"></div>
+                    <h2 class="stream-title">Live Telemetry Probe Stream</h2>
                 </div>
-                <div class="stream-sub">INTERVAL: 3 DETIK (REAL-TIME)</div>
+                <div class="stream-counter">POLL: 3 DETIK (REAL-TIME)</div>
             </div>
-            <div class="table-wrap">
-                <table class="stream-table">
+
+            <div class="stream-table-container">
+                <table class="telemetry-table">
                     <thead>
                         <tr>
-                            <th>TIMESTAMP</th>
-                            <th>CPU</th>
-                            <th>RAM</th>
+                            <th>WAKTU</th>
+                            <th>BEBAN CPU</th>
+                            <th>MEMORI RAM</th>
                             <th>DISK BEBAS</th>
-                            <th>DB LATENSI</th>
-                            <th>STATUS PROBE</th>
+                            <th>LATENSI DB</th>
+                            <th>KONDISI SISTEM</th>
                         </tr>
                     </thead>
                     <tbody id="stream-rows">
@@ -594,32 +825,33 @@
                             <td>{{ $metrics['memory']['used_percentage'] }}% ({{ $metrics['memory']['used'] }})</td>
                             <td>{{ $metrics['disk']['free'] }}</td>
                             <td>{{ $metrics['database']['latency_ms'] !== null ? $metrics['database']['latency_ms'] . ' ms' : 'N/A' }}</td>
-                            <td><span class="tag-status ok">HEALTHY</span></td>
+                            <td><span class="status-chip ok">HEALTHY</span></td>
                         </tr>
                     </tbody>
                 </table>
             </div>
         </section>
 
-
-        <!-- Footer -->
-        <footer class="footer">
-            <div>kikopola/monitoring-server &bull; Standalone Hardware Probe &bull; MIT License</div>
-            <div id="footer-sync">Terakhir Diperiksa: {{ date('Y-m-d H:i:s') }}</div>
+        <!-- Minimalist Clean Footer -->
+        <footer class="dashboard-footer">
+            <div class="footer-brand">
+                <span>kikopola/monitoring-server</span> &bull; <span>Standalone Hardware Probe Agent</span> &bull; <span>MIT License</span>
+            </div>
+            <div id="footer-sync">Sinkronisasi: {{ date('Y-m-d H:i:s') }}</div>
         </footer>
     </div>
 
-    <!-- Live Polling & Telemetry Script -->
+    <!-- Live Polling Script -->
     <script>
         const API_URL = "{{ $apiEndpoint }}";
         const TOKEN = "{{ $token }}";
-        const maxLogRows = 6;
+        const maxLogRows = 8;
 
         async function runProbe(isManual = false) {
             const btn = document.getElementById('btn-reprobe');
             if (isManual && btn) {
                 btn.disabled = true;
-                btn.innerText = 'Probing...';
+                btn.innerHTML = `<span>Probing...</span>`;
             }
 
             try {
@@ -640,13 +872,21 @@
 
                 const now = new Date();
                 const timeStr = now.toISOString().replace('T', ' ').substring(0, 19);
-                document.getElementById('footer-sync').innerText = 'Terakhir Diperiksa: ' + timeStr;
+                document.getElementById('footer-sync').innerText = 'Sinkronisasi: ' + timeStr;
             } catch (err) {
-                console.error("Probe fetch error:", err);
+                console.error("Probe error:", err);
             } finally {
                 if (isManual && btn) {
                     btn.disabled = false;
-                    btn.innerText = 'Re-probe';
+                    btn.innerHTML = `
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <polyline points="23 4 23 10 17 10"></polyline>
+                            <polyline points="1 20 1 14 7 14"></polyline>
+                            <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path>
+                        </svg>
+                        <span>Re-probe</span>
+                        <span class="kbd-hint">R</span>
+                    `;
                 }
             }
         }
@@ -661,10 +901,10 @@
                 document.getElementById('val-cpu').innerText = data.cpu.load_percentage;
                 document.getElementById('sub-cpu-load').innerText = data.cpu.load_percentage + '%';
                 document.getElementById('sub-cpu-state').innerText = data.cpu.status === 'ok' ? 'Normal' : 'Tinggi';
-                const gauge = document.getElementById('gauge-cpu');
-                gauge.style.width = Math.min(data.cpu.load_percentage, 100) + '%';
-                gauge.className = 'gauge-fill ' + data.cpu.status;
-                setTag('tag-cpu', data.cpu.status);
+                const bar = document.getElementById('bar-cpu');
+                bar.style.width = Math.min(data.cpu.load_percentage, 100) + '%';
+                bar.className = 'progress-bar ' + data.cpu.status;
+                setChip('tag-cpu', data.cpu.status);
             }
 
             // RAM
@@ -672,10 +912,10 @@
                 document.getElementById('val-ram').innerText = data.memory.used_percentage;
                 document.getElementById('sub-ram-used').innerText = data.memory.used;
                 document.getElementById('sub-ram-total').innerText = data.memory.total;
-                const gauge = document.getElementById('gauge-ram');
-                gauge.style.width = data.memory.used_percentage + '%';
-                gauge.className = 'gauge-fill ' + data.memory.status;
-                setTag('tag-ram', data.memory.status);
+                const bar = document.getElementById('bar-ram');
+                bar.style.width = data.memory.used_percentage + '%';
+                bar.className = 'progress-bar ' + data.memory.status;
+                setChip('tag-ram', data.memory.status);
             }
 
             // Disk
@@ -683,10 +923,10 @@
                 document.getElementById('val-disk').innerText = data.disk.used_percentage;
                 document.getElementById('sub-disk-free').innerText = data.disk.free;
                 document.getElementById('sub-disk-total').innerText = data.disk.total;
-                const gauge = document.getElementById('gauge-disk');
-                gauge.style.width = data.disk.used_percentage + '%';
-                gauge.className = 'gauge-fill ' + data.disk.status;
-                setTag('tag-disk', data.disk.status);
+                const bar = document.getElementById('bar-disk');
+                bar.style.width = data.disk.used_percentage + '%';
+                bar.className = 'progress-bar ' + data.disk.status;
+                setChip('tag-disk', data.disk.status);
             }
 
             // Database
@@ -695,15 +935,15 @@
                 document.getElementById('val-db-latency').innerText = latency;
                 const dbStatus = document.getElementById('sub-db-status');
                 dbStatus.innerText = data.database.connected ? 'CONNECTED' : 'DISCONNECTED';
-                dbStatus.style.color = data.database.connected ? 'var(--accent-green)' : 'var(--accent-rose)';
-                setTag('tag-db', data.database.status);
+                dbStatus.style.color = data.database.connected ? 'var(--color-emerald)' : 'var(--color-rose)';
+                setChip('tag-db', data.database.status);
             }
         }
 
-        function setTag(id, status) {
+        function setChip(id, status) {
             const el = document.getElementById(id);
             if (!el) return;
-            el.className = 'tag-status ' + status;
+            el.className = 'status-chip ' + status;
             el.innerText = status.toUpperCase();
         }
 
@@ -729,7 +969,7 @@
                 <td>${ram}</td>
                 <td>${disk}</td>
                 <td>${latency}</td>
-                <td><span class="tag-status ${isHealthy ? 'ok' : 'warning'}">${isHealthy ? 'HEALTHY' : 'DEGRADED'}</span></td>
+                <td><span class="status-chip ${isHealthy ? 'ok' : 'warning'}">${isHealthy ? 'HEALTHY' : 'DEGRADED'}</span></td>
             `;
 
             tbody.insertBefore(row, tbody.firstChild);
@@ -739,8 +979,14 @@
             }
         }
 
+        // Shortcut keyboard 'R' untuk Re-probe
+        window.addEventListener('keydown', (e) => {
+            if ((e.key === 'r' || e.key === 'R') && !['INPUT', 'TEXTAREA'].includes(document.activeElement.tagName)) {
+                runProbe(true);
+            }
+        });
 
-        // Live polling every 3 seconds
+        // Polling setiap 3 detik
         setInterval(runProbe, 3000);
     </script>
 </body>
