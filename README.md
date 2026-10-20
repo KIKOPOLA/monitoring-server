@@ -8,13 +8,20 @@
 Package pemantau server (*Server Health & Resource Monitor*) untuk aplikasi Laravel yang bekerja secara **Zero-Configuration (Plug and Play)**. Cukup install via Composer, dan langsung aktif tanpa perlu mengubah kode aplikasi Anda.
 
 ```text
-  __  __             _ _             _                ____                                
- |  \/  | ___  _ __ (_) |_ ___  _ __(_)_ __   __ _   / ___|  ___ _ ____   _____ _ __ 
- | |\/| |/ _ \| '_ \| | __/ _ \| '__| | '_ \ / _` |  \___ \ / _ \ '__\ \ / / _ \ '__|
- | |  | | (_) | | | | | || (_) | |  | | | | | (_| |   ___) |  __/ |   \ V /  __/ |   
- |_|  |_|\___/|_| |_|_|\__\___/|_|  |_|_| |_|\__, |  |____/ \___|_|    \_/ \___|_|   
-                                              |___/                                   
-                        ⚡ MONITORING SERVER • by kikopola ⚡
+  ███╗   ███╗ ██████╗ ███╗   ██╗██╗████████╗ ██████╗ ██████╗ ██╗███╗   ██╗ ██████╗ 
+  ████╗ ████║██╔═══██╗████╗  ██║██║╚══██╔══╝██╔═══██╗██╔══██╗██║████╗  ██║██╔════╝ 
+  ██╔████╔██║██║   ██║██╔██╗ ██║██║   ██║   ██║   ██║██████╔╝██║██╔██╗ ██║██║  ███╗
+  ██║╚██╔╝██║██║   ██║██║╚██╗██║██║   ██║   ██║   ██║██╔══██╗██║██║╚██╗██║██║   ██║
+  ██║ ╚═╝ ██║╚██████╔╝██║ ╚████║██║   ██║   ╚██████╔╝██║  ██║██║██║ ╚████║╚██████╔╝
+  ╚═╝     ╚═╝ ╚═════╝ ╚═╝  ╚═══╝╚═╝   ╚═╝    ╚═════╝ ╚═╝  ╚═╝╚═╝╚═╝  ╚═══╝ ╚═════╝ 
+
+                 ███████╗███████╗██████╗ ██╗   ██╗███████╗██████╗ 
+                 ██╔════╝██╔════╝██╔══██╗██║   ██║██╔════╝██╔══██╗
+                 ███████╗█████╗  ██████╔╝██║   ██║█████╗  ██╔══██╗
+                 ╚════██║██╔══╝  ██╔══██╗╚██╗ ██╔╝██╔══╝  ██╔══██╗
+                 ███████║███████╗██║  ██║ ╚████╔╝ ███████╗██║  ██║
+                 ╚══════╝╚══════╝╚═╝  ╚═╝  ╚═══╝  ╚══════╝╚═╝  ╚═╝
+               ⚡ MONITORING SERVER • by kikopola v1.0 ⚡
 ```
 
 ---
@@ -23,60 +30,88 @@ Package pemantau server (*Server Health & Resource Monitor*) untuk aplikasi Lara
 
 - **100% Data Hardware Asli**: Membaca CPU, RAM, Disk Space, dan Server Uptime riil langsung dari sistem operasi (Mendukung **Linux / Ubuntu Server** dan **Windows / Laragon**).
 - **Cek Kesehatan Database**: Memantau koneksi database aktif, driver engine, dan latensi query (*ping response time* dalam milidetik).
-- **Perintah Terminal Interaktif**: Cukup ketik `php artisan monitoring:check` untuk melihat banner keren dan tabel kondisi server, lengkap dengan link langsung menuju dashboard.
-- **Web Dashboard Real-Time**: Halaman web modern bertema *Dark Mode* di `/monitoring` dengan *live polling* otomatis setiap 3 detik tanpa reload halaman.
+- **CLI Interaktif & Real-Time Log Stream**: Perintah `php artisan monitoring:check` menampilkan banner ANSI Shadow dan tabel hardware satu kali, lalu langsung streaming aktivitas request HTTP server (seperti `php artisan serve`).
+- **Dedicated Port Otomatis (8989)**: Otomatis menjalankan web server monitoring mandiri di port 8989 tanpa mengganggu web server utama.
+- **Graceful Shutdown**: Tekan `Ctrl+C` di terminal untuk mematikan monitoring sekaligus server port 8989 secara bersih.
+- **Web Dashboard Real-Time**: Halaman web modern bertema *Dark Mode* di `/monitoring` dengan *live polling* otomatis setiap 3 detik.
 - **REST API Endpoint**: Menyediakan endpoint JSON di `/api/monitoring/metrics` untuk integrasi dashboard luar.
-- **Proteksi API Token (Opsional)**: Dukungan pengamanan endpoint menggunakan API Token rahasia.
-
----
-
-## 📋 Kebutuhan Sistem
-
-- PHP: `^8.1`, `^8.2`, `^8.3`, atau `^8.4`
-- Laravel: `10.x`, `11.x`, `12.x`, atau `13.x`
+- **Proteksi API Token (Opsional)**: Pengamanan endpoint menggunakan token rahasia untuk server produksi.
 
 ---
 
 ## 📦 Panduan Instalasi
 
-Buka terminal di proyek Laravel target Anda, lalu jalankan:
+### Metode 1: Instalasi dari Folder Lokal (Path Repository)
+Jika package berada di folder lokal komputer Anda (misalnya `../monitoring-server`):
+
+1. Buka file `composer.json` di proyek Laravel target Anda, lalu tambahkan bagian `repositories`:
+```json
+"repositories": [
+    {
+        "type": "path",
+        "url": "../monitoring-server"
+    }
+]
+```
+
+2. Jalankan perintah instalasi di terminal proyek Laravel:
+```bash
+composer require kikopola/monitoring-server:@dev
+```
+
+---
+
+### Metode 2: Instalasi dari Repository GitHub (VCS)
+Jika package di-upload ke GitHub Anda:
+
+1. Buka file `composer.json` di proyek Laravel target:
+```json
+"repositories": [
+    {
+        "type": "vcs",
+        "url": "https://github.com/USERNAME/monitoring-server.git"
+    }
+]
+```
+
+2. Jalankan require:
+```bash
+composer require kikopola/monitoring-server:dev-main
+```
+
+---
+
+### Metode 3: Instalasi dari Packagist (Composer Publik)
+Jika package sudah didaftarkan di Packagist:
 
 ```bash
 composer require kikopola/monitoring-server
 ```
 
-> **Catatan:** Berkat fitur *Laravel Package Auto-Discovery*, package ini akan terdaftar otomatis. Anda **tidak perlu** mengedit `config/app.php` atau `routes/web.php`.
+> **Catatan:** Berkat fitur *Laravel Package Auto-Discovery*, package ini otomatis terdaftar tanpa perlu mengubah `config/app.php` atau `routes/web.php`.
 
 ---
 
 ## 💻 Cara Menggunakan
 
-### 1. Pengecekan Cepat via Terminal (Artisan CLI)
+### 1. Pengecekan via Terminal & Live Request Stream (Artisan CLI)
 Jalankan perintah berikut di terminal proyek Laravel Anda:
 
 ```bash
 php artisan monitoring:check
 ```
 
-Terminal akan langsung menampilkan:
-- Banner ASCII Art **by kikopola**
-- Tabel status CPU, RAM, Harddisk, Uptime, dan Database
-- Deteksi otomatis link dashboard (Laragon / Artisan)
+Perintah ini akan:
+- Menampilkan Banner ANSI Shadow **MONITORING SERVER**
+- Menampilkan tabel kondisi hardware (CPU, RAM, Harddisk, Database, Uptime)
+- Otomatis mengaktifkan live server port 8989
+- Menampilkan link dashboard: `http://localhost:8989/monitoring`
+- **Streaming log request aktivitas server secara real-time** (seperti `php artisan serve`)
+- Tekan `Ctrl+C` untuk mematikan server dan keluar program.
 
 Opsi tambahan:
-- `php artisan monitoring:check --open` : Langsung membuka browser ke dashboard web.
-
-### 2. Menjalankan Dashboard Mandiri & Membuka Browser Otomatis
-Jika web server utama belum dinyalakan, Anda bisa langsung menjalankan server monitoring mandiri:
-
-```bash
-php artisan monitoring:serve
-```
-
-Perintah ini akan:
-- Menjalankan server lokal di `http://127.0.0.1:8989/monitoring`
-- Otomatis membuka web browser Anda
-- Menampilkan log akses real-time (tekan `Ctrl+C` untuk berhenti)
+- `php artisan monitoring:check --open` : Langsung membuka web browser menuju dashboard.
+- `php artisan monitoring:check --once` : Menampilkan laporan metrik satu kali saja tanpa streaming loop.
 
 ### 3. Membuka Dashboard Melalui Web Server yang Sedang Aktif
 Jika Laragon sudah aktif (**Start All**):
