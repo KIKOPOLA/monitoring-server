@@ -11,7 +11,8 @@ class CheckServerCommand extends Command
      * The name and signature of the console command.
      */
     protected $signature = 'monitoring:check
-                            {--open : Buka live dashboard langsung di web browser}';
+                            {--open : Buka live dashboard langsung di web browser}
+                            {--once : Jalankan pengecekan satu kali saja (tanpa live loop)}';
 
     /**
      * The console command description.
@@ -29,13 +30,61 @@ class CheckServerCommand extends Command
             $this->output->getFormatter()->setDecorated(true);
         }
 
+        $dedicatedPort = (int) config('monitoring-server.port', 8989);
+        $path = config('monitoring-server.dashboard_path', 'monitoring');
+        $dashboardUrl = "http://localhost:{$dedicatedPort}/" . ltrim($path, '/');
+
+        // Otomatis nyalakan server port 8989 di background
+        $this->ensureServerRunning($dedicatedPort);
+
+        if ($this->option('open')) {
+            $this->info("🚀 Membuka {$dashboardUrl} di browser...");
+            $this->openInBrowser($dashboardUrl);
+        }
+
+        // Mode satu kali (non-looping) jika opsi --once diberikan
+        if ($this->option('once')) {
+            $this->renderDashboardIteration($monitor, $dedicatedPort, $dashboardUrl, false);
+            return self::SUCCESS;
+        }
+
+        // Mode live interaktif (berhenti dan matikan server saat pengguna menekan Ctrl+C)
+        $this->registerExitHandler($dedicatedPort);
+
+        $first = true;
+        while (true) {
+            if (!$first) {
+                if (defined('STDOUT') && is_resource(STDOUT)) {
+                    fwrite(STDOUT, "\033[H\033[2J");
+                } else {
+                    echo "\033[H\033[2J";
+                }
+            }
+            $first = false;
+
+            $this->renderDashboardIteration($monitor, $dedicatedPort, $dashboardUrl, true);
+
+            // Jeda 2.5 detik (dibagi irisan kecil 0.25s agar Ctrl+C responsif seketika)
+            for ($i = 0; $i < 10; $i++) {
+                usleep(250000);
+            }
+        }
+
+        return self::SUCCESS;
+    }
+
+    /**
+     * Render one complete frame of the dashboard telemetry in CLI.
+     */
+    protected function renderDashboardIteration(ServerMonitor $monitor, int $dedicatedPort, string $dashboardUrl, bool $isLiveLoop): void
+    {
         $this->displayBanner();
 
-        $infoText = "  \033[1;36m⚡ Mengambil data metrik hardware secara real-time...\033[0m\n\n";
+        $infoText = "  \033[1;36m⚡ Metrik Hardware Real-Time (Live Telemetry):\033[0m\n\n";
         if (defined('STDOUT') && is_resource(STDOUT)) {
             fwrite(STDOUT, $infoText);
         } else {
-            $this->info('Mengambil data metrik hardware secara real-time...');
+            $this->info('Metrik Hardware Real-Time (Live Telemetry):');
             $this->newLine();
         }
 
@@ -88,30 +137,108 @@ class CheckServerCommand extends Command
         $this->renderMetricsTable(['Metrik Hardware', 'Kondisi Real-Time', 'Status'], $rows);
         $this->newLine();
 
-        $dedicatedPort = (int) config('monitoring-server.port', 8989);
-        $path = config('monitoring-server.dashboard_path', 'monitoring');
-        $dashboardUrl = "http://localhost:{$dedicatedPort}/" . ltrim($path, '/');
-
-        // Otomatis nyalakan server port 8989 di background secara permanen
-        $this->ensureServerRunning($dedicatedPort);
-
         $portText = "  \033[1;36m🌐 Live Dashboard (Port {$dedicatedPort} Aktif):\033[0m\n"
-                  . "  \033[1;33m👉 {$dashboardUrl}\033[0m\n\n";
+                  . "  \033[1;33m👉 {$dashboardUrl}\033[0m\n";
+
+        if ($isLiveLoop) {
+            $portText .= "\n  \033[90m💡 Tekan \033[1;33mCtrl+C\033[0m\033[90m untuk menghentikan monitoring dan mematikan server.\033[0m\n\n";
+        } else {
+            $portText .= "\n";
+        }
 
         if (defined('STDOUT') && is_resource(STDOUT)) {
             fwrite(STDOUT, $portText);
         } else {
             $this->line("  <fg=cyan;options=bold>🌐 Live Dashboard (Port {$dedicatedPort} Aktif):</>");
             $this->line("  <fg=yellow;options=bold>👉 {$dashboardUrl}</>");
+            if ($isLiveLoop) {
+                $this->line("  <fg=gray>💡 Tekan Ctrl+C untuk menghentikan monitoring dan mematikan server.</>");
+            }
             $this->newLine();
         }
+    }
 
-        if ($this->option('open')) {
-            $this->info("🚀 Membuka {$dashboardUrl} di browser...");
-            $this->openInBrowser($dashboardUrl);
+    /**
+     * Register signal and shutdown handlers for graceful Ctrl+C termination.
+     */
+    protected function registerExitHandler(int $port): void
+    {
+        if (function_exists('sapi_windows_set_ctrl_handler')) {
+            sapi_windows_set_ctrl_handler(function (int $event) use ($port) {
+                if ($event === PHP_WINDOWS_EVENT_CTRL_C || $event === PHP_WINDOWS_EVENT_CTRL_BREAK) {
+                    $this->cleanupAndExit($port);
+                }
+            });
         }
 
-        return self::SUCCESS;
+        if (function_exists('pcntl_async_signals') && function_exists('pcntl_signal')) {
+            pcntl_async_signals(true);
+            pcntl_signal(SIGINT, function () use ($port) {
+                $this->cleanupAndExit($port);
+            });
+            pcntl_signal(SIGTERM, function () use ($port) {
+                $this->cleanupAndExit($port);
+            });
+        }
+
+        register_shutdown_function(function () use ($port) {
+            $this->stopServerOnPort($port);
+        });
+    }
+
+    /**
+     * Clean up background processes and exit cleanly upon Ctrl+C or termination.
+     */
+    protected function cleanupAndExit(int $port): void
+    {
+        $msg = "\n\n  \033[1;33m🛑 Monitoring dihentikan. Server port {$port} telah dimatikan. Sampai jumpa!\033[0m\n\n";
+        if (defined('STDOUT') && is_resource(STDOUT)) {
+            fwrite(STDOUT, $msg);
+        } else {
+            echo $msg;
+        }
+        $this->stopServerOnPort($port);
+        exit(0);
+    }
+
+    /**
+     * Stop the server process listening on the specified port.
+     */
+    public function stopServerOnPort(int $port): bool
+    {
+        $pid = $this->getProcessIdOnPort($port);
+        if ($pid && $pid > 0) {
+            if (PHP_OS_FAMILY === 'Windows') {
+                @exec("taskkill /F /PID {$pid} > nul 2>&1");
+            } else {
+                @exec("kill -9 {$pid} > /dev/null 2>&1");
+            }
+            return true;
+        }
+        return false;
+    }
+
+    /**
+     * Get the PID of the process listening on a port.
+     */
+    protected function getProcessIdOnPort(int $port): ?int
+    {
+        $output = [];
+        if (PHP_OS_FAMILY === 'Windows') {
+            @exec("netstat -ano -p tcp | findstr :{$port}", $output);
+            foreach ($output as $line) {
+                $line = trim($line);
+                if (preg_match('/LISTENING\s+(\d+)$/i', $line, $matches)) {
+                    return (int) $matches[1];
+                }
+            }
+        } else {
+            @exec("lsof -t -i:{$port} -sTCP:LISTEN 2>/dev/null", $output);
+            if (!empty($output[0])) {
+                return (int) trim($output[0]);
+            }
+        }
+        return null;
     }
 
     /**
