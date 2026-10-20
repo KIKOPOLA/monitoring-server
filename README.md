@@ -6,7 +6,7 @@
 [![Laravel Compatibility](https://img.shields.io/badge/laravel-10.x%20|%2011.x%20|%2012.x%20|%2013.x-red.svg?style=flat-square)](https://laravel.com)
 [![PHP Version](https://img.shields.io/badge/php-%5E8.1%20|%20%5E8.2%20|%20%5E8.3%20|%20%5E8.4-purple.svg?style=flat-square)](https://php.net)
 
-Package pemantau server (*Server Health & Resource Monitor*) untuk aplikasi Laravel yang bekerja secara **Zero-Configuration (Plug and Play)**. Cukup install via Composer, dan langsung aktif tanpa perlu mengubah kode aplikasi Anda.
+**Monitoring Server by kikopola** adalah package pemantau kesehatan server (*Server Health & Resource Monitor*) untuk Laravel yang bekerja secara **Zero-Configuration (Plug and Play)**. Membaca data hardware asli (CPU, RAM, Harddisk, Database Latency, dan Uptime) secara real-time langsung dari sistem operasi tanpa perlu koding tambahan.
 
 ```text
   ███╗   ███╗ ██████╗ ███╗   ██╗██╗████████╗ ██████╗ ██████╗ ██╗███╗   ██╗ ██████╗ 
@@ -27,94 +27,61 @@ Package pemantau server (*Server Health & Resource Monitor*) untuk aplikasi Lara
 
 ---
 
-## 🚀 Fitur Utama
+## 📦 Cara Install
 
-- **100% Data Hardware Asli**: Membaca CPU, RAM, Disk Space, dan Server Uptime riil langsung dari sistem operasi (Mendukung **Linux / Ubuntu Server** dan **Windows / Laragon**).
-- **Cek Kesehatan Database**: Memantau koneksi database aktif, driver engine, dan latensi query (*ping response time* dalam milidetik).
-- **CLI Interaktif & Real-Time Log Stream**: Perintah `php artisan monitoring:check` menampilkan banner ANSI Shadow dan tabel hardware satu kali, lalu langsung streaming aktivitas request HTTP server (seperti `php artisan serve`).
-- **Dedicated Port Otomatis (8989)**: Otomatis menjalankan web server monitoring mandiri di port 8989 tanpa mengganggu web server utama.
-- **Graceful Shutdown**: Tekan `Ctrl+C` di terminal untuk mematikan monitoring sekaligus server port 8989 secara bersih.
-- **Web Dashboard Real-Time**: Halaman web modern bertema *Dark Mode* di `/monitoring` dengan *live polling* otomatis setiap 3 detik.
-- **REST API Endpoint**: Menyediakan endpoint JSON di `/api/monitoring/metrics` untuk integrasi dashboard luar.
-- **Proteksi API Token (Opsional)**: Pengamanan endpoint menggunakan token rahasia untuk server produksi.
-
----
-
-## 📦 Instalasi
-
-Cukup jalankan perintah Composer di proyek Laravel Anda:
+Jalankan perintah ini di terminal proyek Laravel Anda:
 
 ```bash
 composer require kikopola/monitoring-server
 ```
 
-> **Catatan:** Berkat fitur *Laravel Package Auto-Discovery*, package ini otomatis terdaftar dan langsung aktif tanpa perlu mengubah `config/app.php` atau `routes/web.php`.
+> **Catatan:** Package ini otomatis terdaftar (*Auto-Discovery*), langsung aktif dan siap digunakan seketika tanpa perlu konfigurasi manual apa pun.
 
 ---
 
-## 💻 Cara Menggunakan
+## 🚀 Fungsi & Cara Penggunaan
 
-### 1. Pengecekan via Terminal & Live Request Stream (Artisan CLI)
-Jalankan perintah berikut di terminal proyek Laravel Anda:
+### 1. Pengecekan via Terminal (Artisan CLI)
+Jalankan perintah monitoring di terminal:
 
 ```bash
 php artisan monitoring:check
 ```
 
-Perintah ini akan:
-- Menampilkan Banner ANSI Shadow **MONITORING SERVER**
-- Menampilkan tabel kondisi hardware (CPU, RAM, Harddisk, Database, Uptime)
-- Otomatis mengaktifkan live server port 8989
+**Fitur:**
+- Menampilkan tabel kondisi hardware riil (CPU load, RAM terpakai, Harddisk, Uptime, & status latensi Database).
+- Otomatis mengaktifkan dedicated web server mandiri di **port 8989**.
 - Menampilkan link dashboard: `http://localhost:8989/monitoring`
-- **Streaming log request aktivitas server secara real-time** (seperti `php artisan serve`)
-- Tekan `Ctrl+C` untuk mematikan server dan keluar program.
+- **Streaming log request aktivitas server secara real-time** (seperti `php artisan serve`).
+- Tekan `Ctrl+C` untuk mematikan monitoring dan server dengan aman (*graceful shutdown*).
 
 Opsi tambahan:
 - `php artisan monitoring:check --open` : Langsung membuka web browser menuju dashboard.
-- `php artisan monitoring:check --once` : Menampilkan laporan metrik satu kali saja tanpa streaming loop.
+- `php artisan monitoring:check --once` : Menampilkan ringkasan metrik 1 kali tanpa streaming server.
 
-### 2. Membuka Dashboard Melalui Web Server yang Sedang Aktif
-Jika Laragon sudah aktif (**Start All**):
-```text
-http://template_web_umkm.test/monitoring
-```
-Atau jika Anda menjalankan `php artisan serve`:
-```text
-http://localhost:8000/monitoring
-```
+---
 
-### 3. Mengambil Data via API (JSON)
-Endpoint untuk integrasi bot, dashboard luar, atau mobile app:
+### 2. Dashboard Web Real-Time
+Buka browser dan akses URL:
+```text
+http://localhost:8989/monitoring
+```
+*(Atau akses `/monitoring` pada domain web server Anda yang sedang berjalan, contoh: `http://localhost:8000/monitoring`)*.
+
+**Fitur Dashboard:**
+- Tampilan modern bertema **Dark Mode**.
+- Metrik hardware dan database ter-update otomatis setiap 3 detik (*live polling*).
+- Responsif dan ringan diakses dari komputer maupun smartphone.
+
+---
+
+### 3. REST API Metrik (JSON)
+Menyediakan endpoint JSON untuk kebutuhan integrasi bot, dashboard luar, atau aplikasi lain:
 
 ```http
 GET /api/monitoring/metrics
 Accept: application/json
 ```
-
----
-
-## ⚙️ Kustomisasi Konfigurasi (Opsional)
-
-Jika Anda ingin mengubah URL dashboard, prefix API, atau memasang token rahasia, publish file konfigurasinya dengan perintah:
-
-```bash
-php artisan vendor:publish --tag=monitoring-server-config
-```
-
-File konfigurasi akan tersedia di `config/monitoring-server.php`:
-
-```php
-return [
-    'enabled' => env('MONITORING_SERVER_ENABLED', true),
-    'dashboard_path' => env('MONITORING_SERVER_DASHBOARD_PATH', 'monitoring'),
-    'api_prefix' => env('MONITORING_SERVER_API_PREFIX', 'api/monitoring'),
-    'api_token' => env('MONITORING_SERVER_API_TOKEN', null),
-    'middleware' => ['web'],
-];
-```
-
-```
-Buka dashboard dengan parameter: `http://domain-anda.com/monitoring?token=kuncirahasia123`
 
 ---
 
