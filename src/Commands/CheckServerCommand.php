@@ -20,6 +20,17 @@ class CheckServerCommand extends Command
     protected $description = 'Check real-time server health and resource usage (by kikopola)';
 
     /**
+     * Alternative command aliases to avoid conflicts with other packages.
+     *
+     * @var array<string>
+     */
+    protected $aliases = [
+        'kikopola:check',
+        'kikopola:monitor',
+        'server:monitor',
+    ];
+
+    /**
      * The process resource for the PHP built-in server.
      */
     protected $serverProcess = null;
