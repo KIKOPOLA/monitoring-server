@@ -1,0 +1,34 @@
+<?php
+
+return [
+    /**
+     * Enable or disable monitoring package entirely.
+     */
+    'enabled' => env('MONITORING_SERVER_ENABLED', true),
+
+    /**
+     * Web dashboard URL path. Default: /monitoring
+     */
+    'dashboard_path' => env('MONITORING_SERVER_DASHBOARD_PATH', 'monitoring'),
+
+    /**
+     * API endpoint URL prefix. Default: /api/monitoring
+     */
+    'api_prefix' => env('MONITORING_SERVER_API_PREFIX', 'api/monitoring'),
+
+    /**
+     * Optional secret token or key to protect monitoring endpoints.
+     * When set, dashboard and API require ?token=... or Header X-Monitoring-Token.
+     */
+    'api_token' => env('MONITORING_SERVER_API_TOKEN', null),
+
+    /**
+     * Dedicated localhost port for the monitoring dashboard server.
+     */
+    'port' => (int) env('MONITORING_SERVER_PORT', 8989),
+
+    /**
+     * Middleware applied to web dashboard routes.
+     */
+    'middleware' => ['web'],
+];
