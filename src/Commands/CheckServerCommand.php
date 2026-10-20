@@ -31,8 +31,13 @@ class CheckServerCommand extends Command
 
         $this->displayBanner();
 
-        $this->info('Mengambil data metrik hardware secara real-time...');
-        $this->newLine();
+        $infoText = "  \033[1;36m⚡ Mengambil data metrik hardware secara real-time...\033[0m\n\n";
+        if (defined('STDOUT') && is_resource(STDOUT)) {
+            fwrite(STDOUT, $infoText);
+        } else {
+            $this->info('Mengambil data metrik hardware secara real-time...');
+            $this->newLine();
+        }
 
         $system = $monitor->getSystemInfo();
         $cpu = $monitor->getCpuMetrics();
@@ -48,7 +53,7 @@ class CheckServerCommand extends Command
             ],
             [
                 'PHP Runtime',
-                "v{$system['php_version']} | Laravel {$system['laravel_version']}",
+                "v{$system['php_version']} • Laravel {$system['laravel_version']}",
                 "\033[1;32m[OK]\033[0m"
             ],
             [
@@ -80,7 +85,7 @@ class CheckServerCommand extends Command
             ],
         ];
 
-        $this->table(['Metrik Hardware', 'Kondisi Real-Time', 'Status'], $rows);
+        $this->renderMetricsTable(['Metrik Hardware', 'Kondisi Real-Time', 'Status'], $rows);
         $this->newLine();
 
         $dedicatedPort = (int) config('monitoring-server.port', 8989);
@@ -90,9 +95,16 @@ class CheckServerCommand extends Command
         // Otomatis nyalakan server port 8989 di background secara permanen
         $this->ensureServerRunning($dedicatedPort);
 
-        $this->line("  <fg=cyan;options=bold>🌐 Live Dashboard (Port {$dedicatedPort} Aktif):</>");
-        $this->line("  <fg=yellow;options=bold>👉 {$dashboardUrl}</>");
-        $this->newLine();
+        $portText = "  \033[1;36m🌐 Live Dashboard (Port {$dedicatedPort} Aktif):\033[0m\n"
+                  . "  \033[1;33m👉 {$dashboardUrl}\033[0m\n\n";
+
+        if (defined('STDOUT') && is_resource(STDOUT)) {
+            fwrite(STDOUT, $portText);
+        } else {
+            $this->line("  <fg=cyan;options=bold>🌐 Live Dashboard (Port {$dedicatedPort} Aktif):</>");
+            $this->line("  <fg=yellow;options=bold>👉 {$dashboardUrl}</>");
+            $this->newLine();
+        }
 
         if ($this->option('open')) {
             $this->info("🚀 Membuka {$dashboardUrl} di browser...");
@@ -242,5 +254,84 @@ class CheckServerCommand extends Command
             'critical' => "\033[1;31m[CRITICAL]\033[0m",
             default => "\033[90m[UNKNOWN]\033[0m",
         };
+    }
+
+    /**
+     * Render the metrics table with mathematical alignment and rich box borders.
+     */
+    protected function renderMetricsTable(array $headers, array $rows): void
+    {
+        $colCount = count($headers);
+        $widths = array_fill(0, $colCount, 0);
+
+        for ($c = 0; $c < $colCount; $c++) {
+            $widths[$c] = max($widths[$c], mb_strlen($this->stripAnsi($headers[$c])));
+        }
+        foreach ($rows as $row) {
+            for ($c = 0; $c < $colCount; $c++) {
+                $val = $row[$c] ?? '';
+                $widths[$c] = max($widths[$c], mb_strlen($this->stripAnsi($val)));
+            }
+        }
+
+        $gray = "\033[90m";
+        $white = "\033[1;37m";
+        $reset = "\033[0m";
+
+        $topParts = [];
+        $midParts = [];
+        $botParts = [];
+        foreach ($widths as $w) {
+            $topParts[] = str_repeat('─', $w + 2);
+            $midParts[] = str_repeat('─', $w + 2);
+            $botParts[] = str_repeat('─', $w + 2);
+        }
+        $top = "  {$gray}┌" . implode('┬', $topParts) . "┐{$reset}";
+        $mid = "  {$gray}├" . implode('┼', $midParts) . "┤{$reset}";
+        $bot = "  {$gray}└" . implode('┴', $botParts) . "┘{$reset}";
+
+        $lines = [$top];
+
+        // Header row
+        $headerCells = [];
+        for ($c = 0; $c < $colCount; $c++) {
+            $hText = $headers[$c];
+            $pad = $widths[$c] - mb_strlen($this->stripAnsi($hText));
+            $headerCells[] = ' ' . $white . $hText . $reset . str_repeat(' ', $pad) . ' ';
+        }
+        $lines[] = "  {$gray}│{$reset}" . implode("{$gray}│{$reset}", $headerCells) . "{$gray}│{$reset}";
+        $lines[] = $mid;
+
+        // Data rows
+        foreach ($rows as $row) {
+            $cells = [];
+            for ($c = 0; $c < $colCount; $c++) {
+                $val = (string) ($row[$c] ?? '');
+                $visLen = mb_strlen($this->stripAnsi($val));
+                $pad = max(0, $widths[$c] - $visLen);
+                $cells[] = ' ' . $val . str_repeat(' ', $pad) . ' ';
+            }
+            $lines[] = "  {$gray}│{$reset}" . implode("{$gray}│{$reset}", $cells) . "{$gray}│{$reset}";
+        }
+
+        $lines[] = $bot;
+
+        $tableText = implode("\n", $lines) . "\n";
+
+        if (defined('STDOUT') && is_resource(STDOUT)) {
+            fwrite(STDOUT, $tableText);
+        } elseif ($this->output) {
+            $this->output->writeln($tableText, \Symfony\Component\Console\Output\OutputInterface::OUTPUT_RAW);
+        } else {
+            echo $tableText;
+        }
+    }
+
+    /**
+     * Strip ANSI escape codes from string for accurate length calculation.
+     */
+    protected function stripAnsi(string $str): string
+    {
+        return preg_replace('/\033\[[0-9;]*m/', '', $str);
     }
 }
