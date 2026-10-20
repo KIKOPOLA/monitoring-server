@@ -113,7 +113,7 @@ Opsi tambahan:
 - `php artisan monitoring:check --open` : Langsung membuka web browser menuju dashboard.
 - `php artisan monitoring:check --once` : Menampilkan laporan metrik satu kali saja tanpa streaming loop.
 
-### 3. Membuka Dashboard Melalui Web Server yang Sedang Aktif
+### 2. Membuka Dashboard Melalui Web Server yang Sedang Aktif
 Jika Laragon sudah aktif (**Start All**):
 ```text
 http://template_web_umkm.test/monitoring
