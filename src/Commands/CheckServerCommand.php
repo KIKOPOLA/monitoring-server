@@ -471,14 +471,14 @@ class CheckServerCommand extends Command
         $gray = "\033[90m";
         $reset = "\033[0m";
 
-        // ANSI Shadow font (matching the user's requested 3D block isometric font style)
+        // Compact ANSI Shadow font (73 chars width - guaranteed to fit 80-column terminals without wrapping)
         $mon = [
-            "███╗   ███╗ ██████╗ ███╗   ██╗██╗████████╗ ██████╗ ██████╗ ██╗███╗   ██╗ ██████╗ ",
-            "████╗ ████║██╔═══██╗████╗  ██║██║╚══██╔══╝██╔═══██╗██╔══██╗██║████╗  ██║██╔════╝ ",
-            "██╔████╔██║██║   ██║██╔██╗ ██║██║   ██║   ██║   ██║██████╔╝██║██╔██╗ ██║██║  ███╗",
-            "██║╚██╔╝██║██║   ██║██║╚██╗██║██║   ██║   ██║   ██║██╔══██╗██║██║╚██╗██║██║   ██║",
-            "██║ ╚═╝ ██║╚██████╔╝██║ ╚████║██║   ██║   ╚██████╔╝██║  ██║██║██║ ╚████║╚██████╔╝",
-            "╚═╝     ╚═╝ ╚═════╝ ╚═╝  ╚═══╝╚═╝   ╚═╝    ╚═════╝ ╚═╝  ╚═╝╚═╝╚═╝  ╚═══╝ ╚═════╝ ",
+            "███╗  ███╗ ██████╗███╗ ██╗██╗█████╗ ██████╗██████╗ ██╗███╗ ██╗ ██████╗",
+            "████╗████║██╔═══██╗████╗██║██║╚═██╔╝██╔═══██╗██╔══██╗██║████╗██║██╔════╝",
+            "██╔███╔██║██║   ██║██╔████║██║  ██║ ██║   ██║██████╔╝██║██╔████║██║  ███╗",
+            "██║╚█╔╝██║██║   ██║██║╚███║██║  ██║ ██║   ██║██╔══██╗██║██║╚███║██║   ██║",
+            "██║ ╚═╝██║╚██████╔╝██║ ╚██║██║  ██║ ╚██████╔╝██║  ██║██║██║ ╚██║╚██████╔╝",
+            "╚═╝    ╚═╝ ╚═════╝ ╚═╝  ╚═╝╚═╝  ╚═╝  ╚═════╝ ╚═╝  ╚═╝╚═╝╚═╝  ╚═╝ ╚═════╝",
         ];
 
         $srv = [
@@ -490,33 +490,19 @@ class CheckServerCommand extends Command
             "╚══════╝╚══════╝╚═╝  ╚═╝  ╚═══╝  ╚══════╝╚═╝  ╚═╝",
         ];
 
-        $termWidth = 120;
-        try {
-            $termWidth = (new \Symfony\Component\Console\Terminal())->getWidth();
-        } catch (\Throwable $e) {
-            $termWidth = 120;
-        }
-
         $lines = [];
-        if ($termWidth >= 135) {
-            // Side-by-side if terminal width is wide enough
-            for ($i = 0; $i < 6; $i++) {
-                $lines[] = "  {$white}{$mon[$i]}{$reset}   {$red}{$srv[$i]}{$reset}";
-            }
-        } else {
-            // Stacked if terminal is standard/narrower (<= 120 cols) so lines never wrap/break
-            foreach ($mon as $line) {
-                $lines[] = "  {$white}{$line}{$reset}";
-            }
-            $lines[] = "";
-            foreach ($srv as $line) {
-                $lines[] = "                 {$red}{$line}{$reset}";
-            }
+        // Stacked format formatted for standard 80-column terminals
+        foreach ($mon as $line) {
+            $lines[] = " {$white}{$line}{$reset}";
+        }
+        $lines[] = "";
+        foreach ($srv as $line) {
+            $lines[] = "            {$red}{$line}{$reset}";
         }
 
         $bannerText = "\n" . implode("\n", $lines) . "\n"
-            . "               {$yellow}⚡{$reset} {$white}MONITORING{$reset} {$red}SERVER{$reset} {$gray}•{$reset} {$yellow}by kikopola v1.0 ⚡{$reset}\n"
-            . "  {$gray}─────────────────────────────────────────────────────────────────────────────{$reset}\n\n";
+            . "            {$yellow}⚡{$reset} {$white}MONITORING{$reset} {$red}SERVER{$reset} {$gray}•{$reset} {$yellow}by kikopola v1.0 ⚡{$reset}\n"
+            . "  {$gray}────────────────────────────────────────────────────────────────────────{$reset}\n\n";
 
         $this->outputRaw($bannerText);
     }
