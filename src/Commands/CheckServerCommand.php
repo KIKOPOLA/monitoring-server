@@ -20,6 +20,26 @@ class CheckServerCommand extends Command
     protected $description = 'Check real-time server health and resource usage (by kikopola)';
 
     /**
+     * The process resource for the PHP built-in server.
+     */
+    protected $serverProcess = null;
+
+    /**
+     * The pipes array for the PHP built-in server.
+     */
+    protected array $serverPipes = [];
+
+    /**
+     * Guard flag to prevent duplicate cleanup on exit.
+     */
+    protected bool $isExiting = false;
+
+    /**
+     * Flag indicating whether server request activity is actively streaming.
+     */
+    protected bool $isStreaming = false;
+
+    /**
      * Execute the console command.
      */
     public function handle(ServerMonitor $monitor): int
@@ -34,59 +54,53 @@ class CheckServerCommand extends Command
         $path = config('monitoring-server.dashboard_path', 'monitoring');
         $dashboardUrl = "http://localhost:{$dedicatedPort}/" . ltrim($path, '/');
 
-        // Otomatis nyalakan server port 8989 di background
-        $this->ensureServerRunning($dedicatedPort);
+        // Pastikan port bersih dari proses lama sebelum menjalankan server baru
+        $this->stopServerOnPort($dedicatedPort);
+
+        // Nyalakan server PHP built-in via proc_open agar log aktivitas dapat ditangkap
+        $this->startServerProcess($dedicatedPort);
+
+        // Daftarkan signal & shutdown handler untuk penanganan Ctrl+C
+        $this->registerExitHandler($dedicatedPort);
+
+        // 1. Tampilkan Banner ANSI Shadow (hanya SEKALI di awal)
+        $this->displayBanner();
+
+        // 2. Tampilkan Tabel Metrik Hardware (hanya SEKALI di awal)
+        $this->renderHardwareTable($monitor);
+
+        // 3. Tampilkan Link Live Dashboard & Petunjuk Ctrl+C (hanya SEKALI)
+        $dashboardInfo = "  \033[1;36m🌐 Live Dashboard (Port {$dedicatedPort} Aktif):\033[0m\n"
+                       . "  \033[1;33m👉 {$dashboardUrl}\033[0m\n\n"
+                       . "  \033[90m💡 Tekan \033[1;33mCtrl+C\033[0m\033[90m untuk menghentikan monitoring dan mematikan server.\033[0m\n\n"
+                       . "  \033[90m─────────────────────────────────────────────────────────────────────────────\033[0m\n"
+                       . "  \033[1;36m📡 Server Request Activity (Port {$dedicatedPort}):\033[0m\n\n";
+
+        $this->outputRaw($dashboardInfo);
 
         if ($this->option('open')) {
-            $this->info("🚀 Membuka {$dashboardUrl} di browser...");
+            $this->outputRaw("  \033[1;32m🚀 Membuka {$dashboardUrl} di browser...\033[0m\n\n");
             $this->openInBrowser($dashboardUrl);
         }
 
-        // Mode satu kali (non-looping) jika opsi --once diberikan
+        // Mode satu kali jika opsi --once diberikan
         if ($this->option('once')) {
-            $this->renderDashboardIteration($monitor, $dedicatedPort, $dashboardUrl, false);
             return self::SUCCESS;
         }
 
-        // Mode live interaktif (berhenti dan matikan server saat pengguna menekan Ctrl+C)
-        $this->registerExitHandler($dedicatedPort);
-
-        $first = true;
-        while (true) {
-            if (!$first) {
-                if (defined('STDOUT') && is_resource(STDOUT)) {
-                    fwrite(STDOUT, "\033[H\033[2J");
-                } else {
-                    echo "\033[H\033[2J";
-                }
-            }
-            $first = false;
-
-            $this->renderDashboardIteration($monitor, $dedicatedPort, $dashboardUrl, true);
-
-            // Jeda 2.5 detik (dibagi irisan kecil 0.25s agar Ctrl+C responsif seketika)
-            for ($i = 0; $i < 10; $i++) {
-                usleep(250000);
-            }
-        }
+        // 4. Streaming Aktivitas Request Server secara Real-Time (seperti php artisan serve)
+        $this->streamServerActivity();
 
         return self::SUCCESS;
     }
 
     /**
-     * Render one complete frame of the dashboard telemetry in CLI.
+     * Render the initial hardware telemetry metrics table.
      */
-    protected function renderDashboardIteration(ServerMonitor $monitor, int $dedicatedPort, string $dashboardUrl, bool $isLiveLoop): void
+    protected function renderHardwareTable(ServerMonitor $monitor): void
     {
-        $this->displayBanner();
-
         $infoText = "  \033[1;36m⚡ Metrik Hardware Real-Time (Live Telemetry):\033[0m\n\n";
-        if (defined('STDOUT') && is_resource(STDOUT)) {
-            fwrite(STDOUT, $infoText);
-        } else {
-            $this->info('Metrik Hardware Real-Time (Live Telemetry):');
-            $this->newLine();
-        }
+        $this->outputRaw($infoText);
 
         $system = $monitor->getSystemInfo();
         $cpu = $monitor->getCpuMetrics();
@@ -135,27 +149,156 @@ class CheckServerCommand extends Command
         ];
 
         $this->renderMetricsTable(['Metrik Hardware', 'Kondisi Real-Time', 'Status'], $rows);
-        $this->newLine();
+        $this->outputRaw("\n");
+    }
 
-        $portText = "  \033[1;36m🌐 Live Dashboard (Port {$dedicatedPort} Aktif):\033[0m\n"
-                  . "  \033[1;33m👉 {$dashboardUrl}\033[0m\n";
+    /**
+     * Start the PHP built-in development server via proc_open.
+     */
+    protected function startServerProcess(int $port): void
+    {
+        $baseDir = function_exists('base_path') ? base_path() : getcwd();
+        $entryArg = file_exists($baseDir . '/server.php') ? 'server.php' : '-t public';
+        $cmd = "php -S 127.0.0.1:{$port} {$entryArg}";
 
-        if ($isLiveLoop) {
-            $portText .= "\n  \033[90m💡 Tekan \033[1;33mCtrl+C\033[0m\033[90m untuk menghentikan monitoring dan mematikan server.\033[0m\n\n";
-        } else {
-            $portText .= "\n";
-        }
+        $descriptors = [
+            0 => ['pipe', 'r'],
+            1 => ['pipe', 'w'],
+            2 => ['pipe', 'w'], // php -S outputs request logs to STDERR
+        ];
 
-        if (defined('STDOUT') && is_resource(STDOUT)) {
-            fwrite(STDOUT, $portText);
-        } else {
-            $this->line("  <fg=cyan;options=bold>🌐 Live Dashboard (Port {$dedicatedPort} Aktif):</>");
-            $this->line("  <fg=yellow;options=bold>👉 {$dashboardUrl}</>");
-            if ($isLiveLoop) {
-                $this->line("  <fg=gray>💡 Tekan Ctrl+C untuk menghentikan monitoring dan mematikan server.</>");
+        $this->serverProcess = @proc_open($cmd, $descriptors, $this->serverPipes, $baseDir);
+
+        if (is_resource($this->serverProcess)) {
+            if (isset($this->serverPipes[1]) && is_resource($this->serverPipes[1])) {
+                stream_set_blocking($this->serverPipes[1], false);
             }
-            $this->newLine();
+            if (isset($this->serverPipes[2]) && is_resource($this->serverPipes[2])) {
+                stream_set_blocking($this->serverPipes[2], false);
+            }
         }
+
+        // Wait up to 1.5 seconds for port to become active
+        for ($i = 0; $i < 15; $i++) {
+            usleep(100000);
+            if ($this->isPortActive('127.0.0.1', $port)) {
+                break;
+            }
+        }
+    }
+
+    /**
+     * Stream real-time PHP server logs to the console (like php artisan serve).
+     */
+    protected function streamServerActivity(): void
+    {
+        $this->isStreaming = true;
+
+        while (true) {
+            // Check if server process unexpectedly died
+            if (is_resource($this->serverProcess)) {
+                $status = @proc_get_status($this->serverProcess);
+                if (is_array($status) && !$status['running']) {
+                    $this->outputRaw("\n  \033[1;31m⚠️ Server PHP terhenti secara tidak terduga.\033[0m\n\n");
+                    break;
+                }
+            }
+
+            // Read lines from STDERR (where php -S writes request logs)
+            if (isset($this->serverPipes[2]) && is_resource($this->serverPipes[2])) {
+                while (($rawLine = fgets($this->serverPipes[2])) !== false) {
+                    $formatted = $this->formatServerLogLine($rawLine);
+                    if ($formatted !== null) {
+                        $this->outputRaw($formatted . "\n");
+                    }
+                }
+            }
+
+            // Also check STDOUT just in case
+            if (isset($this->serverPipes[1]) && is_resource($this->serverPipes[1])) {
+                while (($rawLine = fgets($this->serverPipes[1])) !== false) {
+                    $formatted = $this->formatServerLogLine($rawLine);
+                    if ($formatted !== null) {
+                        $this->outputRaw($formatted . "\n");
+                    }
+                }
+            }
+
+            usleep(40000); // 40ms interval, 0% CPU idle
+        }
+    }
+
+    /**
+     * Format a raw PHP development server log line into a clean, modern CLI log (like php artisan serve).
+     */
+    protected function formatServerLogLine(string $rawLine): ?string
+    {
+        $rawLine = trim($rawLine);
+        if (empty($rawLine)) {
+            return null;
+        }
+
+        // Ignore internal socket handshake noise
+        if (str_contains($rawLine, 'Accepted') || str_contains($rawLine, 'Closing') || str_contains($rawLine, 'Closed without sending')) {
+            return null;
+        }
+
+        $gray = "\033[90m";
+        $white = "\033[1;37m";
+        $cyan = "\033[36m";
+        $reset = "\033[0m";
+
+        // Initial server start banner
+        if (str_contains($rawLine, 'Development Server') && str_contains($rawLine, 'started')) {
+            $time = date('H:i:s');
+            return "  {$gray}[{$time}]{$reset} \033[1;32m[START]\033[0m  PHP Development Server active on http://127.0.0.1:8989";
+        }
+
+        // Match HTTP request line: [Tue Oct 20 10:25:36 2026] 127.0.0.1:62741 [200]: POST /_boost/browser-logs
+        if (preg_match('/\[([^\]]+)\]\s+([^\s]+)\s+\[(\d+)\]:\s+(\w+)\s+(.+)/', $rawLine, $m)) {
+            $timestamp = date('H:i:s');
+            $code = (int) $m[3];
+            $method = str_pad($m[4], 6);
+            $uri = $m[5];
+
+            $codeText = match ($code) {
+                200 => '200 OK',
+                201 => '201 CREATED',
+                204 => '204 NO CONTENT',
+                301, 302 => "{$code} REDIRECT",
+                304 => '304 NOT MODIFIED',
+                400 => '400 BAD REQUEST',
+                401 => '401 UNAUTHORIZED',
+                403 => '403 FORBIDDEN',
+                404 => '404 NOT FOUND',
+                405 => '405 METHOD NOT ALLOWED',
+                422 => '422 UNPROCESSABLE',
+                500 => '500 ERROR',
+                default => (string) $code,
+            };
+
+            $codeBadge = match (true) {
+                $code >= 200 && $code < 300 => "\033[1;32m[{$codeText}]\033[0m",
+                $code >= 300 && $code < 400 => "\033[1;33m[{$codeText}]\033[0m",
+                $code >= 400 && $code < 500 => "\033[1;33m[{$codeText}]\033[0m",
+                default => "\033[1;31m[{$codeText}]\033[0m",
+            };
+
+            return "  {$gray}[{$timestamp}]{$reset} {$codeBadge}  {$white}{$method}{$reset} {$cyan}{$uri}{$reset}";
+        }
+
+        // Fallback for warnings, errors, or custom notices
+        $time = date('H:i:s');
+        return "  {$gray}[{$time}]{$reset} {$rawLine}";
+    }
+
+    /**
+     * Backward-compatible alias for renderIteration.
+     */
+    protected function renderDashboardIteration(ServerMonitor $monitor, int $dedicatedPort, string $dashboardUrl, bool $isLiveLoop): void
+    {
+        $this->displayBanner();
+        $this->renderHardwareTable($monitor);
     }
 
     /**
@@ -182,7 +325,7 @@ class CheckServerCommand extends Command
         }
 
         register_shutdown_function(function () use ($port) {
-            $this->stopServerOnPort($port);
+            $this->cleanupAndExit($port);
         });
     }
 
@@ -191,12 +334,30 @@ class CheckServerCommand extends Command
      */
     protected function cleanupAndExit(int $port): void
     {
-        $msg = "\n\n  \033[1;33m🛑 Monitoring dihentikan. Server port {$port} telah dimatikan. Sampai jumpa!\033[0m\n\n";
-        if (defined('STDOUT') && is_resource(STDOUT)) {
-            fwrite(STDOUT, $msg);
-        } else {
-            echo $msg;
+        if ($this->isExiting) {
+            return;
         }
+        $this->isExiting = true;
+
+        if ($this->isStreaming) {
+            $msg = "\n\n  \033[1;33m🛑 Monitoring dihentikan. Server port {$port} telah dimatikan. Sampai jumpa!\033[0m\n\n";
+            $this->outputRaw($msg);
+        }
+
+        if (is_array($this->serverPipes)) {
+            foreach ($this->serverPipes as $pipe) {
+                if (is_resource($pipe)) {
+                    @fclose($pipe);
+                }
+            }
+        }
+
+        if (is_resource($this->serverProcess)) {
+            @proc_terminate($this->serverProcess);
+            @proc_close($this->serverProcess);
+            $this->serverProcess = null;
+        }
+
         $this->stopServerOnPort($port);
         exit(0);
     }
@@ -242,35 +403,26 @@ class CheckServerCommand extends Command
     }
 
     /**
-     * Ensure local server is running permanently in background on dedicated port.
+     * Backward-compatible alias for starting server in background.
      */
     protected function ensureServerRunning(int $port): void
     {
-        if ($this->isPortActive('127.0.0.1', $port)) {
-            return;
+        if (!$this->isPortActive('127.0.0.1', $port)) {
+            $this->startServerProcess($port);
         }
+    }
 
-        $baseDir = function_exists('base_path') ? base_path() : getcwd();
-        $osFamily = PHP_OS_FAMILY;
-
-        // Deteksi entry point (Laravel 10 pakai server.php, Laravel 11-13 pakai -t public)
-        $entryArg = file_exists($baseDir . '/server.php') ? 'server.php' : '-t public';
-        $commandLine = "php -S 127.0.0.1:{$port} {$entryArg}";
-
-        if ($osFamily === 'Windows') {
-            $escapedDir = addslashes($baseDir);
-            $psCmd = "powershell -NoProfile -Command \"Invoke-CimMethod -ClassName Win32_Process -MethodName Create -Arguments @{CommandLine='{$commandLine}'; CurrentDirectory='{$escapedDir}'}\"";
-            @exec($psCmd);
+    /**
+     * Write raw text to stdout without mangling ANSI escape sequences.
+     */
+    protected function outputRaw(string $text): void
+    {
+        if (defined('STDOUT') && is_resource(STDOUT)) {
+            fwrite(STDOUT, $text);
+        } elseif ($this->output) {
+            $this->output->writeln($text, \Symfony\Component\Console\Output\OutputInterface::OUTPUT_RAW);
         } else {
-            @exec("cd " . escapeshellarg($baseDir) . " && nohup {$commandLine} > /dev/null 2>&1 &");
-        }
-
-        // Wait up to 1.5 seconds for port to become active
-        for ($i = 0; $i < 15; $i++) {
-            usleep(100000); // 0.1s
-            if ($this->isPortActive('127.0.0.1', $port)) {
-                break;
-            }
+            echo $text;
         }
     }
 
@@ -361,13 +513,7 @@ class CheckServerCommand extends Command
             . "               {$yellow}⚡{$reset} {$white}MONITORING{$reset} {$red}SERVER{$reset} {$gray}•{$reset} {$yellow}by kikopola v1.0 ⚡{$reset}\n"
             . "  {$gray}─────────────────────────────────────────────────────────────────────────────{$reset}\n\n";
 
-        if (defined('STDOUT') && is_resource(STDOUT)) {
-            fwrite(STDOUT, $bannerText);
-        } elseif ($this->output) {
-            $this->output->writeln($bannerText, \Symfony\Component\Console\Output\OutputInterface::OUTPUT_RAW);
-        } else {
-            echo $bannerText;
-        }
+        $this->outputRaw($bannerText);
     }
 
     /**
@@ -445,13 +591,7 @@ class CheckServerCommand extends Command
 
         $tableText = implode("\n", $lines) . "\n";
 
-        if (defined('STDOUT') && is_resource(STDOUT)) {
-            fwrite(STDOUT, $tableText);
-        } elseif ($this->output) {
-            $this->output->writeln($tableText, \Symfony\Component\Console\Output\OutputInterface::OUTPUT_RAW);
-        } else {
-            echo $tableText;
-        }
+        $this->outputRaw($tableText);
     }
 
     /**
