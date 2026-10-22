@@ -32,15 +32,21 @@ class MonitoringDashboardController extends Controller
      */
     public function api(Request $request, ServerMonitor $monitor): JsonResponse
     {
-        $this->authorizeAccess($request);
+        $headers = $this->corsHeaders();
 
-        return response()->json($monitor->getAllMetrics());
+        if ($request->isMethod('OPTIONS')) {
+            return response()->json([], 200, $headers);
+        }
+
+        $this->authorizeAccess($request, $headers);
+
+        return response()->json($monitor->getAllMetrics(), 200, $headers);
     }
 
     /**
      * Verify API token if configured.
      */
-    protected function authorizeAccess(Request $request): void
+    protected function authorizeAccess(Request $request, array $headers = []): void
     {
         $expectedToken = config('monitoring-server.api_token');
 
@@ -50,8 +56,32 @@ class MonitoringDashboardController extends Controller
                 ?: $request->bearerToken();
 
             if (empty($givenToken) || !hash_equals((string) $expectedToken, (string) $givenToken)) {
+                if ($request->expectsJson() || $request->isMethod('OPTIONS') || $request->is('api/*')) {
+                    abort(response()->json([
+                        'error' => 'Unauthorized',
+                        'message' => 'Akses ditolak: Token monitoring tidak valid atau belum diberikan.'
+                    ], 403, $headers));
+                }
+
                 abort(403, 'Akses ditolak: Token monitoring tidak valid atau belum diberikan.');
             }
         }
+    }
+
+    /**
+     * Get CORS headers for cross-origin / central dashboard support.
+     */
+    protected function corsHeaders(): array
+    {
+        if (!config('monitoring-server.cors', true)) {
+            return [];
+        }
+
+        return [
+            'Access-Control-Allow-Origin' => '*',
+            'Access-Control-Allow-Methods' => 'GET, OPTIONS',
+            'Access-Control-Allow-Headers' => 'Content-Type, X-Monitoring-Token, Authorization, Accept, X-Requested-With',
+            'Access-Control-Max-Age' => '86400',
+        ];
     }
 }

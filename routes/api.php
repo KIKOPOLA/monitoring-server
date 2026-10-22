@@ -8,6 +8,6 @@ if (config('monitoring-server.enabled', true)) {
     $middleware = config('monitoring-server.api_middleware', ['throttle:60,1']);
 
     Route::prefix($apiPrefix)->middleware($middleware)->group(function () {
-        Route::get('/metrics', [MonitoringDashboardController::class, 'api'])->name('monitoring-server.api.metrics');
+        Route::match(['GET', 'OPTIONS'], '/metrics', [MonitoringDashboardController::class, 'api'])->name('monitoring-server.api.metrics');
     });
 }

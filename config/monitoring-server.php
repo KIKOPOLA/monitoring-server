@@ -36,4 +36,9 @@ return [
      * Middleware applied to API routes (default: throttle to prevent DoS attacks).
      */
     'api_middleware' => ['throttle:60,1'],
+
+    /**
+     * Enable or disable CORS headers for external/central dashboard integrations.
+     */
+    'cors' => env('MONITORING_SERVER_CORS', true),
 ];
