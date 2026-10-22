@@ -61,6 +61,24 @@ Opsi tambahan:
 
 ---
 
+## 🔒 Keamanan & Proteksi Dashboard
+
+Secara default, dashboard `/monitoring` dapat diakses langsung. Anda dapat mengamankannya dengan menambahkan opsi berikut pada file `.env` aplikasi Anda:
+
+### 1. Wajib Login Akun Aplikasi (Redirect ke `/login`)
+```env
+MONITORING_SERVER_REQUIRE_AUTH=true
+```
+*Siapapun yang belum login ke aplikasi Anda dan mencoba mengakses `/monitoring` akan otomatis dialihkan ke halaman `/login`.*
+
+### 2. Kunci dengan Token Rahasia
+```env
+MONITORING_SERVER_API_TOKEN=rahasia-token-anda
+```
+*Akses dashboard dan API memerlukan token:* `https://domain-anda.com/monitoring?token=rahasia-token-anda`
+
+---
+
 ## 📄 Lisensi
 
 Package ini dirilis di bawah lisensi [MIT License](LICENSE).

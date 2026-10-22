@@ -28,9 +28,18 @@ return [
     'port' => (int) env('MONITORING_SERVER_PORT', 8989),
 
     /**
-     * Middleware applied to web dashboard routes.
+     * Require authentication before accessing the dashboard.
+     * When true, unauthenticated visitors are automatically redirected to the application's /login page.
      */
-    'middleware' => ['web'],
+    'require_auth' => env('MONITORING_SERVER_REQUIRE_AUTH', false),
+
+    /**
+     * Middleware applied to web dashboard routes.
+     * Can also be customized via .env (e.g. MONITORING_SERVER_MIDDLEWARE=web,auth)
+     */
+    'middleware' => env('MONITORING_SERVER_MIDDLEWARE')
+        ? array_map('trim', explode(',', env('MONITORING_SERVER_MIDDLEWARE')))
+        : ['web'],
 
     /**
      * Middleware applied to API routes (default: throttle to prevent DoS attacks).
