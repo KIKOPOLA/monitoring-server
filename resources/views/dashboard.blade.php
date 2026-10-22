@@ -672,6 +672,10 @@
 
                 <div class="card-details-table">
                     <div class="detail-row">
+                        <span class="detail-key">Total Cores</span>
+                        <span class="detail-val" id="sub-cpu-cores">{{ $metrics['cpu']['cores'] ?? 1 }} Cores</span>
+                    </div>
+                    <div class="detail-row">
                         <span class="detail-key">Beban Realtime</span>
                         <span class="detail-val" id="sub-cpu-load">{{ $metrics['cpu']['load_percentage'] }}%</span>
                     </div>
@@ -900,6 +904,9 @@
             // CPU
             if (data.cpu) {
                 document.getElementById('val-cpu').innerText = data.cpu.load_percentage;
+                if (data.cpu.cores && document.getElementById('sub-cpu-cores')) {
+                    document.getElementById('sub-cpu-cores').innerText = data.cpu.cores + ' Cores';
+                }
                 document.getElementById('sub-cpu-load').innerText = data.cpu.load_percentage + '%';
                 document.getElementById('sub-cpu-state').innerText = data.cpu.status === 'ok' ? 'Normal' : 'Tinggi';
                 const bar = document.getElementById('bar-cpu');

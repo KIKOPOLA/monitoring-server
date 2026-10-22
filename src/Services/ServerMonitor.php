@@ -195,8 +195,9 @@ class ServerMonitor
         $osFamily = PHP_OS_FAMILY;
         $loadPercentage = 0.0;
         $loadAvg = [];
+        $cores = $this->getCpuCoreCount($osFamily);
 
-        if ($osFamily === 'Linux') {
+        if ($osFamily === 'Linux' || $osFamily === 'Darwin') {
             if (function_exists('sys_getloadavg')) {
                 $load = sys_getloadavg();
                 if ($load !== false && count($load) >= 3) {
@@ -205,7 +206,8 @@ class ServerMonitor
                         '5m' => round($load[1], 2),
                         '15m' => round($load[2], 2),
                     ];
-                    $loadPercentage = round($load[0] * 10, 2);
+                    // On Unix/Linux, load average is scaled by the number of logical CPU cores
+                    $loadPercentage = min(100.0, round(($load[0] / max(1, $cores)) * 100, 2));
                 }
             }
         } elseif ($osFamily === 'Windows') {
@@ -219,6 +221,7 @@ class ServerMonitor
         return [
             'load_percentage' => $loadPercentage,
             'load_average' => $loadAvg,
+            'cores' => $cores,
             'status' => $loadPercentage >= 85 ? 'critical' : ($loadPercentage >= 70 ? 'warning' : 'ok'),
         ];
     }
@@ -260,6 +263,58 @@ class ServerMonitor
                     : 'Gagal terhubung ke database server.',
             ];
         }
+    }
+
+    /**
+     * Detect total logical CPU cores count across different platforms.
+     */
+    public function getCpuCoreCount(?string $osFamily = null): int
+    {
+        $family = $osFamily ?: PHP_OS_FAMILY;
+
+        if ($family === 'Windows') {
+            $num = getenv('NUMBER_OF_PROCESSORS');
+            if ($num !== false && is_numeric($num) && (int) $num > 0) {
+                return (int) $num;
+            }
+            $cmd = 'powershell -NoProfile -Command "(Get-CimInstance Win32_Processor | Measure-Object -Property NumberOfLogicalProcessors -Sum).Sum"';
+            $res = $this->safeShellExec($cmd);
+            if ($res !== null && is_numeric(trim($res)) && (int) trim($res) > 0) {
+                return (int) trim($res);
+            }
+            return 1;
+        }
+
+        if ($family === 'Linux') {
+            // Priority 1: Direct read from /proc/cpuinfo (fast, zero shell overhead)
+            if (@is_readable('/proc/cpuinfo')) {
+                $cpuinfo = @file_get_contents('/proc/cpuinfo');
+                if ($cpuinfo) {
+                    $count = preg_match_all('/^processor\s*:/m', $cpuinfo);
+                    if ($count > 0) {
+                        return (int) $count;
+                    }
+                }
+            }
+
+            // Priority 2: nproc shell command
+            $nproc = $this->safeShellExec('nproc');
+            if ($nproc !== null && is_numeric(trim($nproc)) && (int) trim($nproc) > 0) {
+                return (int) trim($nproc);
+            }
+
+            return 1;
+        }
+
+        if ($family === 'Darwin') {
+            $ncpu = $this->safeShellExec('sysctl -n hw.ncpu');
+            if ($ncpu !== null && is_numeric(trim($ncpu)) && (int) trim($ncpu) > 0) {
+                return (int) trim($ncpu);
+            }
+            return 1;
+        }
+
+        return 1;
     }
 
     /**
