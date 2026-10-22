@@ -2,8 +2,10 @@
 
 namespace Kikopola\MonitoringServer;
 
+use Illuminate\Console\Scheduling\Schedule;
 use Illuminate\Support\ServiceProvider;
 use Kikopola\MonitoringServer\Commands\CheckServerCommand;
+use Kikopola\MonitoringServer\Commands\HeartbeatCommand;
 use Kikopola\MonitoringServer\Commands\ServeServerCommand;
 use Kikopola\MonitoringServer\Services\ServerMonitor;
 
@@ -41,6 +43,7 @@ class MonitoringServerServiceProvider extends ServiceProvider
             $this->commands([
                 CheckServerCommand::class,
                 ServeServerCommand::class,
+                HeartbeatCommand::class,
             ]);
 
             $this->publishes([
@@ -50,6 +53,22 @@ class MonitoringServerServiceProvider extends ServiceProvider
             $this->publishes([
                 __DIR__ . '/../resources/views' => resource_path('views/vendor/monitoring-server'),
             ], 'monitoring-server-views');
+
+            // Optional auto-schedule for heartbeat reports to Central Hub
+            $this->app->booted(function () {
+                if ($this->app->bound(Schedule::class)) {
+                    $schedule = $this->app->make(Schedule::class);
+                    if (config('monitoring-server.hub_schedule_enabled', false) && !empty(config('monitoring-server.hub_url'))) {
+                        $freq = config('monitoring-server.hub_frequency', 'everyFiveMinutes');
+                        $cmd = $schedule->command('monitoring:heartbeat');
+                        if (method_exists($cmd, $freq)) {
+                            $cmd->$freq()->withoutOverlapping();
+                        } else {
+                            $cmd->everyFiveMinutes()->withoutOverlapping();
+                        }
+                    }
+                }
+            });
         }
     }
 }

@@ -41,4 +41,29 @@ return [
      * Enable or disable CORS headers for external/central dashboard integrations.
      */
     'cors' => env('MONITORING_SERVER_CORS', true),
+
+    /**
+     * Central Master Monitoring Hub integration (PUSH / Heartbeat).
+     * Set this URL to automatically send server health and metrics to a central dashboard.
+     * Example: 'http://localhost:8000/api/monitor/heartbeat'
+     */
+    'hub_url' => env('MONITORING_SERVER_HUB_URL', null),
+
+    /**
+     * Optional secret bearer token to authenticate with the central hub.
+     */
+    'hub_token' => env('MONITORING_SERVER_HUB_TOKEN', null),
+
+    /**
+     * Application identity reported to the central hub.
+     */
+    'app_name' => env('MONITORING_SERVER_APP_NAME', env('APP_NAME', 'Laravel')),
+    'app_url' => env('MONITORING_SERVER_APP_URL', env('APP_URL', 'http://localhost')),
+
+    /**
+     * Enable automatic background scheduling for heartbeat reports.
+     * Frequency options: everyMinute, everyTwoMinutes, everyFiveMinutes, everyTenMinutes, etc.
+     */
+    'hub_schedule_enabled' => env('MONITORING_SERVER_HUB_SCHEDULE', false),
+    'hub_frequency' => env('MONITORING_SERVER_HUB_FREQUENCY', 'everyFiveMinutes'),
 ];
