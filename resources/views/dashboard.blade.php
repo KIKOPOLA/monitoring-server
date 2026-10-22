@@ -232,6 +232,19 @@
             transform: translateY(0);
         }
 
+        .btn-logout {
+            text-decoration: none;
+            color: #fda4af;
+            background: rgba(244, 63, 94, 0.12);
+            border-color: rgba(244, 63, 94, 0.35);
+        }
+
+        .btn-logout:hover {
+            background: rgba(244, 63, 94, 0.25);
+            border-color: var(--color-rose);
+            color: #fff;
+        }
+
         .kbd-hint {
             font-family: var(--font-mono);
             font-size: 0.65rem;
@@ -609,6 +622,16 @@
                     <span>Re-probe</span>
                     <span class="kbd-hint">R</span>
                 </button>
+                @if($isPasswordProtected ?? false)
+                <a href="{{ url(trim(config('monitoring-server.dashboard_path', 'monitoring'), '/') . '/logout') }}" class="btn-probe btn-logout" title="Kunci Dashboard / Keluar">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
+                        <polyline points="16 17 21 12 16 7"></polyline>
+                        <line x1="21" y1="12" x2="9" y2="12"></line>
+                    </svg>
+                    <span>Logout</span>
+                </a>
+                @endif
             </div>
         </header>
 

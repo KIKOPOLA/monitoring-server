@@ -28,6 +28,18 @@ return [
     'port' => (int) env('MONITORING_SERVER_PORT', 8989),
 
     /**
+     * Standalone password protection for the monitoring dashboard.
+     * When set, visitors must enter this password to view the dashboard (no DB or registration needed).
+     * Example: 'bintang123'
+     */
+    'password' => env('MONITORING_SERVER_PASSWORD', env('MONITORING_PASSWORD', null)),
+
+    /**
+     * Optional username if you want username + password login authentication.
+     */
+    'username' => env('MONITORING_SERVER_USERNAME', null),
+
+    /**
      * Require authentication before accessing the dashboard.
      * When true, unauthenticated visitors are automatically redirected to the application's /login page.
      */

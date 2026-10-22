@@ -65,13 +65,24 @@ Opsi tambahan:
 
 Secara default, dashboard `/monitoring` dapat diakses langsung. Anda dapat mengamankannya dengan menambahkan opsi berikut pada file `.env` aplikasi Anda:
 
-### 1. Wajib Login Akun Aplikasi (Redirect ke `/login`)
+### 1. Form Login Mandiri (Password Khusus di `.env`) 🔑
+Langsung menampilkan layar login dark-mode elegan saat `/monitoring` dibuka tanpa perlu registrasi atau database:
+```env
+MONITORING_PASSWORD=password-rahasia-anda
+```
+*(Opsional: Jika ingin kombinasi Username + Password:)*
+```env
+MONITORING_SERVER_USERNAME=admin
+MONITORING_SERVER_PASSWORD=password-rahasia-anda
+```
+
+### 2. Wajib Login Akun Aplikasi (Redirect ke `/login` bawaan) 👤
 ```env
 MONITORING_SERVER_REQUIRE_AUTH=true
 ```
-*Siapapun yang belum login ke aplikasi Anda dan mencoba mengakses `/monitoring` akan otomatis dialihkan ke halaman `/login`.*
+*Siapapun yang belum login ke aplikasi Anda dan mencoba mengakses `/monitoring` akan otomatis dialihkan ke halaman `/login` aplikasi.*
 
-### 2. Kunci dengan Token Rahasia
+### 3. Kunci dengan Token Rahasia / API Key 🛡️
 ```env
 MONITORING_SERVER_API_TOKEN=rahasia-token-anda
 ```
